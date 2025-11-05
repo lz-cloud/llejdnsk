@@ -1,0 +1,194 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  GITHUB
+  SSO
+}
+
+enum AccessLevel {
+  READ
+  WRITE
+  ADMIN
+}
+
+model User {
+  id              String          @id @default(uuid())
+  email           String          @unique
+  username        String?
+  password        String?
+  displayName     String?
+  avatar          String?
+  role            UserRole        @default(USER)
+  authProvider    AuthProvider    @default(LOCAL)
+  providerId      String?
+  erpUserCode     String?         @unique
+  isActive        Boolean         @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  userGroups      UserGroupMember[]
+  accessLogs      UserAccessLog[]
+  favorites       UserFavorite[]
+  userAccess      UserAccess[]
+  sessions        Session[]
+
+  @@index([email])
+  @@index([erpUserCode])
+}
+
+model UserGroup {
+  id              String              @id @default(uuid())
+  name            String              @unique
+  description     String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  members         UserGroupMember[]
+  permissions     GroupPermission[]
+}
+
+model UserGroupMember {
+  id              String      @id @default(uuid())
+  userId          String
+  groupId         String
+  createdAt       DateTime    @default(now())
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group           UserGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model KnowledgeBase {
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  url             String
+  category        String?
+  icon            String?
+  displayOrder    Int             @default(0)
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  accessLogs      UserAccessLog[]
+  favorites       UserFavorite[]
+  userAccess      UserAccess[]
+  groupPermissions GroupPermission[]
+
+  @@index([category])
+}
+
+model UserAccess {
+  id              String          @id @default(uuid())
+  userId          String
+  knowledgeBaseId String
+  accessLevel     AccessLevel     @default(READ)
+  createdAt       DateTime        @default(now())
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgeBase   KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, knowledgeBaseId])
+}
+
+model GroupPermission {
+  id              String          @id @default(uuid())
+  groupId         String
+  knowledgeBaseId String
+  accessLevel     AccessLevel     @default(READ)
+  createdAt       DateTime        @default(now())
+
+  group           UserGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  knowledgeBase   KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, knowledgeBaseId])
+}
+
+model UserAccessLog {
+  id              String          @id @default(uuid())
+  userId          String
+  knowledgeBaseId String
+  accessTime      DateTime        @default(now())
+  accessDuration  Int?
+  ipAddress       String?
+  userAgent       String?
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgeBase   KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, accessTime])
+  @@index([knowledgeBaseId, accessTime])
+}
+
+model UserFavorite {
+  id              String          @id @default(uuid())
+  userId          String
+  knowledgeBaseId String
+  createdAt       DateTime        @default(now())
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgeBase   KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, knowledgeBaseId])
+}
+
+model SSOConfig {
+  id              String      @id @default(uuid())
+  name            String      @unique
+  desKey          String
+  desIV           String
+  desPadding      String      @default("pkcs5padding")
+  desMode         String      @default("CBC")
+  tokenValidity   Int         @default(5)
+  isActive        Boolean     @default(true)
+  allowedIPs      String[]    @default([])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model LoginAuditLog {
+  id              String      @id @default(uuid())
+  userId          String?
+  email           String?
+  authProvider    AuthProvider
+  success         Boolean
+  failureReason   String?
+  ipAddress       String?
+  userAgent       String?
+  timestamp       DateTime    @default(now())
+
+  @@index([userId, timestamp])
+  @@index([timestamp])
+}
+
+model Session {
+  id              String      @id @default(uuid())
+  userId          String
+  token           String      @unique
+  expiresAt       DateTime
+  createdAt       DateTime    @default(now())
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
