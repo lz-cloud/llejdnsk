@@ -150,6 +150,8 @@ npm run prisma:migrate
 npm run dev
 ```
 
+> 注意：`SITE_URL` 用于配置平台默认网站地址（默认值：`http://localhost:5000`），部署到生产环境时请修改为真实访问域名，并避免末尾斜杠。
+
 #### 3. 前端设置
 
 ```bash

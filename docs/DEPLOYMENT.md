@@ -17,6 +17,7 @@
 - `SESSION_SECRET` - Session secret key
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+- `SITE_URL` - Backend application base URL (default: http://localhost:5000)
 - `FRONTEND_URL` - Frontend application base URL
 
 ### Frontend

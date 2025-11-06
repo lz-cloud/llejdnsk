@@ -33,6 +33,7 @@ services:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/fastgpt_platform?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      SITE_URL: http://localhost:5000
       FRONTEND_URL: http://localhost:3000
     volumes:
       - ./backend:/app

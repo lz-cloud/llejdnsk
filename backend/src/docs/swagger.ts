@@ -11,8 +11,8 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: `http://localhost:${env.port}${env.apiPrefix}`,
-        description: 'Local server',
+        url: `${env.siteUrl}${env.apiPrefix}`,
+        description: 'Configured server',
       },
     ],
     components: {
