@@ -3,7 +3,7 @@ import portalService from '../services/portalService';
 
 export const getKnowledgeBases = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || 'token' in req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -16,7 +16,7 @@ export const getKnowledgeBases = async (req: Request, res: Response) => {
 
 export const recordAccess = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || 'token' in req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -30,7 +30,7 @@ export const recordAccess = async (req: Request, res: Response) => {
 
 export const getRecentAccess = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || 'token' in req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -43,7 +43,7 @@ export const getRecentAccess = async (req: Request, res: Response) => {
 
 export const toggleFavorite = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || 'token' in req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -57,7 +57,7 @@ export const toggleFavorite = async (req: Request, res: Response) => {
 
 export const getFavorites = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || 'token' in req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -70,7 +70,7 @@ export const getFavorites = async (req: Request, res: Response) => {
 
 export const getUsageStats = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || 'token' in req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 

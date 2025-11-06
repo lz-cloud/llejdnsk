@@ -56,6 +56,7 @@ export interface User {
   isActive: boolean;
   authProvider: string;
   createdAt: string;
+  lastLoginAt?: string;
 }
 
 export interface UserPayload {
@@ -73,6 +74,8 @@ export interface UserGroup {
   name: string;
   description?: string;
   createdAt: string;
+  members?: any[];
+  permissions?: { knowledgeBaseId: string; accessLevel: string }[];
 }
 
 export interface AccessAnalytics {

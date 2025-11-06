@@ -136,6 +136,7 @@ class AdminService {
         password: hashedPassword,
         erpUserCode: data.erpUserCode,
         authProvider: AuthProvider.LOCAL,
+        isActive: data.isActive ?? true,
       },
     });
 
