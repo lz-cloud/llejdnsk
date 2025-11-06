@@ -45,7 +45,7 @@ export const ssoLogin = async (req: Request, res: Response) => {
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || 'token' in req.user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 

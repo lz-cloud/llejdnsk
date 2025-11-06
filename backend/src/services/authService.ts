@@ -156,6 +156,13 @@ class AuthService {
     }
 
     try {
+      if (ssoConfig.allowedIPs.length > 0) {
+        const sanitizedIp = ipAddress?.replace('::ffff:', '') || '';
+        if (!sanitizedIp || !ssoConfig.allowedIPs.includes(sanitizedIp)) {
+          throw new Error('IP address not allowed for SSO login');
+        }
+      }
+
       const desEncryption = new DESEncryption({
         key: ssoConfig.desKey,
         iv: ssoConfig.desIV,

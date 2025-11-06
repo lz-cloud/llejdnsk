@@ -32,7 +32,10 @@ const SSOConfigPage = () => {
   const handleOpenModal = (config?: SSOConfig) => {
     setEditingConfig(config || null);
     if (config) {
-      form.setFieldsValue(config);
+      form.setFieldsValue({
+        ...config,
+        allowedIPs: config.allowedIPs?.join(', '),
+      });
     } else {
       form.resetFields();
     }
@@ -45,9 +48,14 @@ const SSOConfigPage = () => {
     form.resetFields();
   };
 
-  const handleSave = async (values: SSOConfigPayload) => {
+  const handleSave = async (values: SSOConfigPayload & { allowedIPs?: string }) => {
     try {
-      const payload = editingConfig ? { ...values, id: editingConfig.id } : values;
+      const allowedIPsArray = values.allowedIPs
+        ? values.allowedIPs.split(',').map((ip) => ip.trim()).filter(Boolean)
+        : [];
+      const payload = editingConfig
+        ? { ...values, id: editingConfig.id, allowedIPs: allowedIPsArray }
+        : { ...values, allowedIPs: allowedIPsArray };
       await adminService.saveSSOConfig(payload);
       message.success('保存成功');
       handleCloseModal();
