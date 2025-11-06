@@ -218,16 +218,20 @@ const toggleFavorite = async (knowledgeBaseId, token) => {
 
 ### Using Google OAuth
 
+> The backend base URL is configured via the `SITE_URL` environment variable (default: `http://localhost:5000`).
+
 1. Configure Google OAuth in backend `.env`:
 ```env
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/oauth2/google/callback
+# Optional: override if different from ${SITE_URL}/api/auth/oauth2/google/callback
+# GOOGLE_CALLBACK_URL=https://your-backend.com/api/auth/oauth2/google/callback
 ```
 
 2. Redirect user to Google:
 ```javascript
-window.location.href = 'http://localhost:5000/api/auth/oauth2/google';
+const backendBaseUrl = 'http://localhost:5000'; // align with SITE_URL setting
+window.location.href = `${backendBaseUrl}/api/auth/oauth2/google`;
 ```
 
 3. Handle callback (backend automatically handles this)
@@ -238,12 +242,14 @@ window.location.href = 'http://localhost:5000/api/auth/oauth2/google';
 ```env
 GITHUB_CLIENT_ID=your-client-id
 GITHUB_CLIENT_SECRET=your-client-secret
-GITHUB_CALLBACK_URL=http://localhost:5000/api/auth/oauth2/github/callback
+# Optional: override if different from ${SITE_URL}/api/auth/oauth2/github/callback
+# GITHUB_CALLBACK_URL=https://your-backend.com/api/auth/oauth2/github/callback
 ```
 
 2. Redirect user:
 ```javascript
-window.location.href = 'http://localhost:5000/api/auth/oauth2/github';
+const backendBaseUrl = 'http://localhost:5000'; // align with SITE_URL setting
+window.location.href = `${backendBaseUrl}/api/auth/oauth2/github`;
 ```
 
 ## Python Integration Example
@@ -327,6 +333,7 @@ services:
       DATABASE_URL: postgresql://user:pass@postgres:5432/db
       REDIS_HOST: redis
       JWT_SECRET: your-secret
+      SITE_URL: http://api.example.com
       FRONTEND_URL: http://localhost
     depends_on:
       - postgres
