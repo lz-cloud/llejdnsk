@@ -1,3 +1,22 @@
+# 项目文档
+
+## 简介
+
+本项目使用简体中文作为主要开发语言，目前仓库尚未包含具体业务代码。
+
+## 项目结构
+
+当前仓库仅包含基础文档与配置文件，可根据需求逐步补充模块。
+
+## 开发指南
+
+1. 根据业务需求创建对应的代码目录与模块。
+2. 遵循团队约定的编码规范与提交流程。
+3. 在提交前请运行必要的单元测试与质量检查。
+
+## 许可证
+
+待补充
 # FastGPT Third-Party Platform
 
 A comprehensive SSO and knowledge base management platform for FastGPT integration, supporting OAuth2 and custom DES-encrypted SSO authentication.
