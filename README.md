@@ -183,9 +183,24 @@ npm run dev
   "desMode": "CBC",             // 加密模式
   "tokenValidity": 5,           // 令牌有效期（分钟）
   "allowedIPs": ["1.2.3.4"],    // IP白名单（可选）
-  "isActive": true              // 是否启用
+  "isActive": true              // 是否启用（可通过开关快速切换）
 }
 ```
+
+#### SSO启用/禁用功能
+
+管理员可以在SSO配置管理页面通过开关按钮快速启用或禁用SSO配置：
+- **启用**：用户可以使用该配置进行单点登录
+- **禁用**：阻止新的SSO登录请求，但不影响已登录用户
+- **配置保留**：禁用后所有配置信息都会保留，可随时重新启用
+
+使用场景：
+- 临时维护：SSO提供商维护期间临时禁用
+- 安全响应：发现安全问题时立即禁用
+- 环境切换：测试和生产环境配置切换
+- 逐步迁移：新旧SSO系统平滑过渡
+
+详细说明请参考：[SSO启用/禁用功能文档](docs/sso-toggle-feature.md)
 
 ### SSO登录流程
 
@@ -250,7 +265,10 @@ API文档自动生成，启动后端服务后访问：`http://localhost:5000/api
 - `PUT /api/admin/knowledge-bases/:id` - 更新知识库
 - `DELETE /api/admin/knowledge-bases/:id` - 删除知识库
 - `GET /api/admin/sso-configs` - 获取SSO配置列表
+- `GET /api/admin/sso-configs/:id` - 获取单个SSO配置
 - `POST /api/admin/sso-configs` - 创建/更新SSO配置
+- `PATCH /api/admin/sso-configs/:id` - 启用/禁用SSO配置
+- `DELETE /api/admin/sso-configs/:id` - 删除SSO配置
 - `GET /api/admin/users` - 获取用户列表
 - `POST /api/admin/users` - 创建/更新用户
 - `POST /api/admin/users/:id/deactivate` - 禁用用户

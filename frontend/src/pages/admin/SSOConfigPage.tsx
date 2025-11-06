@@ -75,6 +75,16 @@ const SSOConfigPage = () => {
     }
   };
 
+  const handleToggle = async (record: SSOConfig, checked: boolean) => {
+    try {
+      await adminService.toggleSSOConfig(record.id, checked);
+      message.success(`已${checked ? '启用' : '禁用'}SSO配置`);
+      setConfigs((prev) => prev.map((config) => (config.id === record.id ? { ...config, isActive: checked } : config)));
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '更新状态失败');
+    }
+  };
+
   const columns = [
     { title: '名称', dataIndex: 'name', key: 'name' },
     { title: 'DES Key', dataIndex: 'desKey', key: 'desKey' },
@@ -86,7 +96,12 @@ const SSOConfigPage = () => {
       title: '状态',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive: boolean) => (isActive ? '启用' : '禁用'),
+      render: (_: boolean, record: SSOConfig) => (
+        <Switch
+          checked={record.isActive}
+          onChange={(checked) => handleToggle(record, checked)}
+        />
+      ),
     },
     {
       title: '操作',

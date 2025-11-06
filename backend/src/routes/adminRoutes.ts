@@ -20,6 +20,8 @@ router.route('/sso-configs')
   .post(adminController.createOrUpdateSSOConfig);
 
 router.route('/sso-configs/:id')
+  .get(adminController.getSSOConfig)
+  .patch(adminController.toggleSSOConfig)
   .delete(adminController.deleteSSOConfig);
 
 router.route('/users')

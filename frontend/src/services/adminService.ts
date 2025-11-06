@@ -32,8 +32,16 @@ const adminService = {
     const { data } = await api.get('/admin/sso-configs');
     return data.data;
   },
+  async getSSOConfig(id: string): Promise<SSOConfig> {
+    const { data } = await api.get(`/admin/sso-configs/${id}`);
+    return data.data;
+  },
   async saveSSOConfig(payload: SSOConfigPayload): Promise<SSOConfig> {
     const { data } = await api.post('/admin/sso-configs', payload);
+    return data.data;
+  },
+  async toggleSSOConfig(id: string, isActive: boolean): Promise<SSOConfig> {
+    const { data } = await api.patch(`/admin/sso-configs/${id}`, { isActive });
     return data.data;
   },
   async deleteSSOConfig(id: string): Promise<void> {
