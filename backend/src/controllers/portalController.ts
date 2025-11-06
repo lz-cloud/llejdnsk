@@ -1,13 +1,32 @@
 import { Request, Response } from 'express';
 import portalService from '../services/portalService';
+import type { User } from '@prisma/client';
+
+type OAuthUserPayload = {
+  user: Partial<User>;
+  token: string;
+};
+
+const isOAuthUserPayload = (user: Request['user']): user is OAuthUserPayload => {
+  return !!user && typeof user === 'object' && 'token' in user;
+};
+
+const getAuthenticatedUser = (req: Request): User | null => {
+  const { user } = req;
+  if (!user || isOAuthUserPayload(user)) {
+    return null;
+  }
+  return user;
+};
 
 export const getKnowledgeBases = async (req: Request, res: Response) => {
   try {
-    if (!req.user || 'token' in req.user) {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const knowledgeBases = await portalService.getUserKnowledgeBases(req.user.id);
+    const knowledgeBases = await portalService.getUserKnowledgeBases(user.id);
     res.json({ success: true, data: knowledgeBases });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch knowledge bases' });
@@ -16,12 +35,13 @@ export const getKnowledgeBases = async (req: Request, res: Response) => {
 
 export const recordAccess = async (req: Request, res: Response) => {
   try {
-    if (!req.user || 'token' in req.user) {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
     const { id } = req.params;
-    await portalService.recordAccess(req.user.id, id, req.ip, req.headers['user-agent']);
+    await portalService.recordAccess(user.id, id, req.ip, req.headers['user-agent']);
     res.json({ success: true, message: 'Access recorded successfully' });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Failed to record access' });
@@ -30,11 +50,12 @@ export const recordAccess = async (req: Request, res: Response) => {
 
 export const getRecentAccess = async (req: Request, res: Response) => {
   try {
-    if (!req.user || 'token' in req.user) {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const recentAccess = await portalService.getRecentAccess(req.user.id);
+    const recentAccess = await portalService.getRecentAccess(user.id);
     res.json({ success: true, data: recentAccess });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch recent access' });
@@ -43,12 +64,13 @@ export const getRecentAccess = async (req: Request, res: Response) => {
 
 export const toggleFavorite = async (req: Request, res: Response) => {
   try {
-    if (!req.user || 'token' in req.user) {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
     const { knowledgeBaseId } = req.body;
-    const result = await portalService.toggleFavorite(req.user.id, knowledgeBaseId);
+    const result = await portalService.toggleFavorite(user.id, knowledgeBaseId);
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Failed to update favorite' });
@@ -57,11 +79,12 @@ export const toggleFavorite = async (req: Request, res: Response) => {
 
 export const getFavorites = async (req: Request, res: Response) => {
   try {
-    if (!req.user || 'token' in req.user) {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const favorites = await portalService.getFavorites(req.user.id);
+    const favorites = await portalService.getFavorites(user.id);
     res.json({ success: true, data: favorites });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch favorites' });
@@ -70,11 +93,12 @@ export const getFavorites = async (req: Request, res: Response) => {
 
 export const getUsageStats = async (req: Request, res: Response) => {
   try {
-    if (!req.user || 'token' in req.user) {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const stats = await portalService.getUsageStats(req.user.id);
+    const stats = await portalService.getUsageStats(user.id);
     res.json({ success: true, data: stats });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch usage stats' });
