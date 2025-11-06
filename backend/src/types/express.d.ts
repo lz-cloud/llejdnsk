@@ -1,14 +1,16 @@
-import { User } from '@prisma/client';
+import type { User as PrismaUser } from '@prisma/client';
 
-type OAuthUserPayload = {
-  user: Partial<User>;
+export type OAuthUserPayload = {
   token: string;
+  user?: Partial<PrismaUser>;
 };
 
 declare global {
   namespace Express {
     interface Request {
-      user?: User | OAuthUserPayload;
+      user?: PrismaUser | OAuthUserPayload;
     }
   }
 }
+
+export {}

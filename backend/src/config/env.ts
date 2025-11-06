@@ -1,11 +1,14 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import type { SignOptions } from 'jsonwebtoken';
 
 dotenv.config({
   path: process.env.NODE_ENV === 'production'
     ? path.resolve(process.cwd(), '.env')
     : path.resolve(process.cwd(), '.env'),
 });
+
+const defaultJwtExpiresIn: SignOptions['expiresIn'] = (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'];
 
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -15,7 +18,7 @@ export const env = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   jwt: {
     secret: process.env.JWT_SECRET || 'change_me',
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: defaultJwtExpiresIn,
   },
   sessionSecret: process.env.SESSION_SECRET || 'change_session_secret',
   redis: {

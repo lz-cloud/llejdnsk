@@ -10,3 +10,36 @@ Thumbs.db
 # 常见依赖目录
 node_modules/
 .venv/
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建输出目录
+backend/dist/
+frontend/dist/
+frontend/build/
+
+# IDE配置
+.idea/
+.vscode/
+*.iml
+
+# 测试覆盖率报告
+coverage/
+.nyc_output/
+
+# 临时文件
+*.tmp
+*.temp
+
+# 数据库文件
+*.db
+*.sqlite
+
+# 缓存
+.cache/
+.eslintcache
