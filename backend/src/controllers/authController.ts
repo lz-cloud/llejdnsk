@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import authService from '../services/authService';
 import { env } from '../config/env';
+import { getAuthenticatedUser } from '../utils/requestUser';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -45,11 +46,12 @@ export const ssoLogin = async (req: Request, res: Response) => {
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
-    if (!req.user || 'token' in req.user) {
+    const user = getAuthenticatedUser(req);
+    if (!user) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    res.json({ success: true, data: { user: req.user } });
+    res.json({ success: true, data: { user } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profile' });
   }

@@ -1,23 +1,6 @@
 import { Request, Response } from 'express';
 import portalService from '../services/portalService';
-import type { User } from '@prisma/client';
-
-type OAuthUserPayload = {
-  user: Partial<User>;
-  token: string;
-};
-
-const isOAuthUserPayload = (user: Request['user']): user is OAuthUserPayload => {
-  return !!user && typeof user === 'object' && 'token' in user;
-};
-
-const getAuthenticatedUser = (req: Request): User | null => {
-  const { user } = req;
-  if (!user || isOAuthUserPayload(user)) {
-    return null;
-  }
-  return user;
-};
+import { getAuthenticatedUser } from '../utils/requestUser';
 
 export const getKnowledgeBases = async (req: Request, res: Response) => {
   try {
