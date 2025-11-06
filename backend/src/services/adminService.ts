@@ -86,9 +86,13 @@ class AdminService {
   // SSO Configs
   async createOrUpdateSSOConfig(data: SSOConfigDTO) {
     if (data.id) {
+      const { id, allowedIPs, ...updateData } = data;
       return prisma.sSOConfig.update({
-        where: { id: data.id },
-        data,
+        where: { id },
+        data: {
+          ...updateData,
+          ...(allowedIPs !== undefined ? { allowedIPs } : {}),
+        },
       });
     }
 
@@ -108,6 +112,19 @@ class AdminService {
 
   async listSSOConfigs() {
     return prisma.sSOConfig.findMany();
+  }
+
+  async getSSOConfig(id: string) {
+    return prisma.sSOConfig.findUnique({
+      where: { id },
+    });
+  }
+
+  async toggleSSOConfig(id: string, isActive: boolean) {
+    return prisma.sSOConfig.update({
+      where: { id },
+      data: { isActive },
+    });
   }
 
   async deleteSSOConfig(id: string) {

@@ -67,6 +67,31 @@ export const listSSOConfigs = async (_req: Request, res: Response) => {
   }
 };
 
+export const getSSOConfig = async (req: Request, res: Response) => {
+  try {
+    const config = await adminService.getSSOConfig(req.params.id);
+    if (!config) {
+      return res.status(404).json({ success: false, message: 'SSO config not found' });
+    }
+    res.json({ success: true, data: config });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to get SSO config' });
+  }
+};
+
+export const toggleSSOConfig = async (req: Request, res: Response) => {
+  try {
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'isActive must be a boolean' });
+    }
+    const config = await adminService.toggleSSOConfig(req.params.id, isActive);
+    res.json({ success: true, data: config, message: `SSO config ${isActive ? 'enabled' : 'disabled'} successfully` });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Failed to toggle SSO config' });
+  }
+};
+
 export const deleteSSOConfig = async (req: Request, res: Response) => {
   try {
     await adminService.deleteSSOConfig(req.params.id);
