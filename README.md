@@ -2,6 +2,20 @@
 
 一个功能完整的知识库管理平台，支持OAuth2和自定义SSO单点登录，专为FastGPT集成设计。
 
+## 📖 快速导航
+
+- [核心功能](#-核心功能)
+- [快速开始](#-快速开始) - **首次使用从这里开始**
+- [前端后端连接配置](#-前端后端连接配置) - **修复连接问题**
+- [部署指南](#-部署指南) - **生产环境部署**
+- [API文档](#-api文档)
+- [常见问题](#常见连接问题排查) - **故障排除**
+
+📄 **详细文档**：
+- [完整部署指南](docs/DEPLOYMENT_GUIDE.md) - Docker、手动部署、生产环境配置
+- [快速故障排查](docs/QUICK_TROUBLESHOOTING.md) - 常见问题快速解决方案
+- [SSO配置示例](docs/EXAMPLES.md) - SSO集成实例
+
 ## ✨ 核心功能
 
 ### 🔐 认证系统
@@ -92,6 +106,16 @@
 
 ### 使用Docker（推荐）
 
+#### 步骤1：创建环境配置
+
+```bash
+# 复制环境变量模板
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+#### 步骤2：启动服务
+
 ```bash
 # 启动所有服务
 docker-compose up -d
@@ -99,18 +123,31 @@ docker-compose up -d
 # 查看日志
 docker-compose logs -f
 
+# 初始化数据库
+docker-compose exec backend npm run prisma:migrate:deploy
+
 # 停止服务
 docker-compose down
 ```
 
+#### 步骤3：访问应用
+
 服务地址：
-- 前端应用：http://localhost:3000
-- 后端API：http://localhost:5000
-- API文档：http://localhost:5000/api-docs
+- **前端应用**：http://localhost:3000
+- **后端API**：http://localhost:5000
+- **API文档**：http://localhost:5000/api-docs
+- **健康检查**：http://localhost:5000/health
 
 默认管理员账号：
 - 邮箱：admin@example.com
 - 密码：Admin@123456
+
+> ⚠️ **重要提示**：
+> - 首次启动前必须创建 `.env` 配置文件
+> - 生产环境务必修改 `JWT_SECRET` 和 `SESSION_SECRET`
+> - 确保 `CORS_ORIGIN` 配置正确，否则前端无法连接后端
+>
+> 📖 详细部署指南请查看：[完整部署文档](docs/DEPLOYMENT_GUIDE.md)
 
 ### 手动部署
 
@@ -376,7 +413,847 @@ npm run build
 npm run preview
 ```
 
-## 📦 生产部署
+## 🔧 前端后端连接配置
+
+### 开发环境配置
+
+项目采用前后端分离架构，需要正确配置API连接以确保前端可以访问后端服务。
+
+#### 后端配置（backend/.env）
+
+```env
+# 服务器配置
+NODE_ENV=development
+PORT=5000
+API_PREFIX=/api
+
+# 数据库连接
+DATABASE_URL="postgresql://postgres:password@localhost:5432/fastgpt_platform?schema=public"
+
+# Redis连接
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# CORS配置 - 允许前端域名访问
+CORS_ORIGIN=http://localhost:3000
+
+# 后端服务地址（无末尾斜杠）
+SITE_URL=http://localhost:5000
+
+# 前端应用地址
+FRONTEND_URL=http://localhost:3000
+
+# JWT密钥（生产环境务必修改）
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Session密钥（生产环境务必修改）
+SESSION_SECRET=your-super-secret-session-key-change-this-in-production
+
+# 管理员初始账号
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=Admin@123456
+```
+
+#### 前端配置（frontend/.env）
+
+```env
+# API基础地址
+VITE_API_URL=http://localhost:5000/api
+```
+
+### 连接检查清单
+
+在启动应用前，请确认以下配置正确：
+
+1. ✅ **后端 CORS 配置**：`CORS_ORIGIN` 包含前端地址
+2. ✅ **前端 API 地址**：`VITE_API_URL` 指向后端API正确的地址
+3. ✅ **数据库连接**：PostgreSQL服务正常运行且连接信息正确
+4. ✅ **Redis连接**：Redis服务正常运行且连接信息正确
+5. ✅ **端口可用**：确保5000（后端）和3000（前端）端口未被占用
+
+### Docker环境配置
+
+使用Docker Compose时，容器间通过服务名通信，但前端访问后端需要使用宿主机地址：
+
+```yaml
+# docker-compose.yml 关键配置
+backend:
+  environment:
+    CORS_ORIGIN: http://localhost:3000
+    SITE_URL: http://localhost:5000
+    FRONTEND_URL: http://localhost:3000
+
+frontend:
+  environment:
+    # 浏览器访问使用宿主机地址
+    VITE_API_URL: http://localhost:5000/api
+```
+
+### 常见连接问题排查
+
+#### 问题1：前端无法连接后端（Network Error）
+
+**可能原因：**
+- 后端服务未启动
+- 端口被占用或防火墙阻止
+- CORS配置不正确
+
+**解决方案：**
+```bash
+# 1. 检查后端服务是否运行
+curl http://localhost:5000/health
+
+# 2. 检查端口占用
+lsof -i :5000
+netstat -an | grep 5000
+
+# 3. 检查后端日志中的CORS错误
+docker-compose logs backend | grep CORS
+```
+
+#### 问题2：401 Unauthorized错误
+
+**可能原因：**
+- JWT Token过期或无效
+- 认证中间件配置问题
+
+**解决方案：**
+```javascript
+// 清除浏览器中的过期Token
+localStorage.removeItem('authToken');
+// 然后重新登录
+```
+
+#### 问题3：Docker容器间连接失败
+
+**可能原因：**
+- 容器网络配置问题
+- 使用了错误的主机名
+
+**解决方案：**
+```bash
+# 检查容器网络
+docker network ls
+docker network inspect <network_name>
+
+# 确保所有服务在同一网络中
+docker-compose ps
+```
+
+## 📦 部署指南
+
+### 方式一：Docker Compose 部署（推荐）
+
+Docker Compose是最简单快速的部署方式，适合开发和测试环境。
+
+#### 步骤1：环境准备
+
+```bash
+# 克隆项目
+git clone <repository-url>
+cd fastgpt-platform
+
+# 创建必要的配置文件（如果不存在）
+# 后端配置
+cp backend/.env.example backend/.env
+# 前端配置
+cp frontend/.env.example frontend/.env
+```
+
+#### 步骤2：配置环境变量
+
+编辑 `backend/.env` 和 `frontend/.env`，根据实际情况修改配置。
+
+**重要配置项：**
+- `DATABASE_URL`: PostgreSQL连接字符串
+- `JWT_SECRET`: JWT密钥（必须修改）
+- `SESSION_SECRET`: Session密钥（必须修改）
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD`: 管理员账号
+- `CORS_ORIGIN`: 前端域名
+- `VITE_API_URL`: 后端API地址
+
+#### 步骤3：启动服务
+
+```bash
+# 启动所有服务
+docker-compose up -d
+
+# 查看服务状态
+docker-compose ps
+
+# 查看服务日志
+docker-compose logs -f
+
+# 查看特定服务日志
+docker-compose logs -f backend
+docker-compose logs -f frontend
+```
+
+#### 步骤4：初始化数据库
+
+```bash
+# 进入后端容器
+docker-compose exec backend sh
+
+# 运行数据库迁移
+npm run prisma:migrate:deploy
+
+# 退出容器
+exit
+```
+
+#### 步骤5：访问应用
+
+- 前端应用：http://localhost:3000
+- 后端API：http://localhost:5000
+- API文档：http://localhost:5000/api-docs
+- 健康检查：http://localhost:5000/health
+
+默认管理员账号：
+- 邮箱：admin@example.com
+- 密码：Admin@123456
+
+#### 维护命令
+
+```bash
+# 停止服务
+docker-compose stop
+
+# 启动服务
+docker-compose start
+
+# 重启服务
+docker-compose restart
+
+# 重建并启动服务（配置更改后）
+docker-compose up -d --build
+
+# 停止并删除容器、网络（保留数据卷）
+docker-compose down
+
+# 完全清理（包括数据卷）
+docker-compose down -v
+
+# 查看资源使用
+docker-compose stats
+```
+
+### 方式二：手动部署
+
+手动部署适合生产环境，可以更灵活地控制各个组件。
+
+#### 步骤1：环境准备
+
+**系统要求：**
+- Ubuntu 20.04+ / CentOS 8+ / macOS 10.15+
+- Node.js 18+
+- PostgreSQL 14+
+- Redis 7+
+- Nginx（可选，用于反向代理）
+
+#### 步骤2：安装依赖服务
+
+**PostgreSQL:**
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y postgresql postgresql-contrib
+
+# macOS
+brew install postgresql@14
+
+# 启动PostgreSQL
+sudo systemctl start postgresql  # Linux
+brew services start postgresql@14  # macOS
+
+# 创建数据库
+sudo -u postgres psql
+CREATE DATABASE fastgpt_platform;
+CREATE USER postgres WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE fastgpt_platform TO postgres;
+\q
+```
+
+**Redis:**
+```bash
+# Ubuntu/Debian
+sudo apt-get install -y redis-server
+
+# macOS
+brew install redis
+
+# 启动Redis
+sudo systemctl start redis  # Linux
+brew services start redis  # macOS
+```
+
+#### 步骤3：部署后端
+
+```bash
+# 进入后端目录
+cd backend
+
+# 安装依赖
+npm install
+
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env 文件，修改数据库连接等配置
+
+# 生成Prisma客户端
+npm run prisma:generate
+
+# 运行数据库迁移
+npm run prisma:migrate:deploy
+
+# 构建生产版本
+npm run build
+
+# 启动生产服务
+NODE_ENV=production npm start
+
+# 或使用 PM2 管理进程（推荐）
+npm install -g pm2
+pm2 start dist/app.js --name fastgpt-backend
+pm2 save
+pm2 startup  # 设置开机启动
+```
+
+#### 步骤4：部署前端
+
+```bash
+# 进入前端目录
+cd frontend
+
+# 安装依赖
+npm install
+
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env 文件，设置API地址
+
+# 构建生产版本
+npm run build
+
+# 将 build 目录部署到 Web 服务器
+# 方式1：使用serve（简单测试）
+npx serve -s build -l 3000
+
+# 方式2：复制到Nginx目录（推荐）
+sudo cp -r build/* /var/www/fastgpt-platform/
+```
+
+#### 步骤5：配置 Nginx（推荐）
+
+创建 Nginx 配置文件：
+
+```bash
+sudo nano /etc/nginx/sites-available/fastgpt-platform
+```
+
+添加以下配置：
+
+```nginx
+# /etc/nginx/sites-available/fastgpt-platform
+
+# 上游后端服务
+upstream backend {
+    server localhost:5000;
+}
+
+# HTTP服务器配置
+server {
+    listen 80;
+    server_name your-domain.com;  # 修改为你的域名
+
+    # 访问日志
+    access_log /var/log/nginx/fastgpt-access.log;
+    error_log /var/log/nginx/fastgpt-error.log;
+
+    # 前端静态文件
+    location / {
+        root /var/www/fastgpt-platform;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+        
+        # 缓存配置
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+
+    # 后端API代理
+    location /api {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        
+        # WebSocket支持
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        
+        # 请求头设置
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_cache_bypass $http_upgrade;
+        
+        # 超时设置
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # API文档
+    location /api-docs {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+    }
+
+    # 健康检查
+    location /health {
+        proxy_pass http://backend;
+        access_log off;
+    }
+}
+```
+
+启用配置并重启Nginx：
+
+```bash
+# 创建符号链接
+sudo ln -s /etc/nginx/sites-available/fastgpt-platform /etc/nginx/sites-enabled/
+
+# 测试配置
+sudo nginx -t
+
+# 重启Nginx
+sudo systemctl restart nginx
+```
+
+### 方式三：生产环境部署（带 SSL）
+
+#### 步骤1：获取SSL证书
+
+使用 Let's Encrypt 免费SSL证书：
+
+```bash
+# 安装 Certbot
+sudo apt-get install -y certbot python3-certbot-nginx
+
+# 获取证书并自动配置Nginx
+sudo certbot --nginx -d your-domain.com
+
+# 证书将自动续期，也可以手动测试续期
+sudo certbot renew --dry-run
+```
+
+#### 步骤2：更新 Nginx 配置
+
+Certbot会自动更新配置，但你也可以手动调整：
+
+```nginx
+# HTTPS服务器配置
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    
+    # SSL配置
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    
+    # 其他配置同上...
+}
+
+# HTTP重定向到HTTPS
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+```
+
+#### 步骤3：更新应用配置
+
+更新 `backend/.env`：
+
+```env
+NODE_ENV=production
+SITE_URL=https://your-domain.com
+FRONTEND_URL=https://your-domain.com
+CORS_ORIGIN=https://your-domain.com
+```
+
+更新 `frontend/.env`：
+
+```env
+VITE_API_URL=https://your-domain.com/api
+```
+
+#### 步骤4：重新构建和部署
+
+```bash
+# 后端
+cd backend
+npm run build
+pm2 restart fastgpt-backend
+
+# 前端
+cd frontend
+npm run build
+sudo cp -r build/* /var/www/fastgpt-platform/
+
+# 重启Nginx
+sudo systemctl restart nginx
+```
+
+### Docker Compose 生产环境配置
+
+创建 `docker-compose.prod.yml`:
+
+```yaml
+services:
+  postgres:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_DB: fastgpt_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # 使用环境变量
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup:/backup  # 数据备份目录
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    restart: always
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+  redis_data:
+  nginx_logs:
+```
+
+使用生产配置启动：
+
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## 📝 Docker编排修改规范
+
+在修改 Docker Compose 配置时，请遵循以下规范：
+
+### 1. 环境变量管理
+
+**不要在 docker-compose.yml 中硬编码敏感信息：**
+
+❌ 错误示例：
+```yaml
+environment:
+  DATABASE_URL: postgresql://postgres:password123@postgres:5432/db
+```
+
+✅ 正确示例：
+```yaml
+environment:
+  DATABASE_URL: ${DATABASE_URL}
+```
+
+或使用 `env_file`:
+```yaml
+env_file:
+  - .env.production
+```
+
+### 2. 服务依赖管理
+
+使用 `depends_on` 和健康检查确保服务按正确顺序启动：
+
+```yaml
+backend:
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+```
+
+### 3. 数据持久化
+
+**始终使用命名卷（named volumes）存储重要数据：**
+
+```yaml
+services:
+  postgres:
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup:/backup  # 备份目录
+
+volumes:
+  postgres_data:
+    driver: local
+```
+
+### 4. 网络配置
+
+**为生产环境创建自定义网络：**
+
+```yaml
+services:
+  backend:
+    networks:
+      - app-network
+      - db-network
+
+  postgres:
+    networks:
+      - db-network
+
+networks:
+  app-network:
+    driver: bridge
+  db-network:
+    driver: bridge
+    internal: true  # 数据库网络不对外
+```
+
+### 5. 资源限制
+
+**设置合理的资源限制防止单个服务占用过多资源：**
+
+```yaml
+backend:
+  deploy:
+    resources:
+      limits:
+        cpus: '1.0'
+        memory: 1G
+      reservations:
+        cpus: '0.5'
+        memory: 512M
+```
+
+### 6. 日志管理
+
+**配置日志驱动和轮转策略：**
+
+```yaml
+backend:
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+      labels: "backend"
+```
+
+### 7. 重启策略
+
+**生产环境使用 `always` 或 `unless-stopped`：**
+
+```yaml
+services:
+  backend:
+    restart: always  # 生产环境
+    # restart: unless-stopped  # 也可以
+```
+
+开发环境可以使用：
+```yaml
+services:
+  backend:
+    restart: on-failure
+```
+
+### 8. 端口映射
+
+**生产环境不暴露不必要的端口：**
+
+❌ 开发环境（全部暴露）：
+```yaml
+services:
+  postgres:
+    ports:
+      - "5432:5432"  # 暴露给宿主机
+```
+
+✅ 生产环境（通过网络通信）：
+```yaml
+services:
+  postgres:
+    expose:
+      - "5432"  # 仅容器间可访问
+```
+
+### 9. 环境区分
+
+**使用不同的compose文件区分环境：**
+
+```
+docker-compose.yml           # 基础配置
+docker-compose.dev.yml       # 开发环境覆盖
+docker-compose.prod.yml      # 生产环境覆盖
+```
+
+使用方式：
+```bash
+# 开发环境
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+# 生产环境
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+### 10. 配置文件版本控制
+
+**不同环境使用不同的配置文件：**
+
+```
+.env.example           # 模板文件（提交到Git）
+.env                   # 本地开发配置（不提交）
+.env.development       # 开发环境（不提交）
+.env.production        # 生产环境（不提交）
+```
+
+`.gitignore` 配置：
+```
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+```
+
+### 修改 Docker Compose 的完整流程
+
+1. **备份当前配置**
+   ```bash
+   cp docker-compose.yml docker-compose.yml.backup
+   ```
+
+2. **在开发环境测试修改**
+   ```bash
+   docker-compose -f docker-compose.dev.yml config  # 验证语法
+   docker-compose -f docker-compose.dev.yml up
+   ```
+
+3. **验证服务正常运行**
+   ```bash
+   docker-compose ps
+   docker-compose logs
+   curl http://localhost:5000/health
+   ```
+
+4. **应用到生产环境**
+   ```bash
+   # 先停止服务
+   docker-compose -f docker-compose.prod.yml down
+   
+   # 备份数据
+   docker-compose -f docker-compose.prod.yml exec postgres pg_dump -U postgres fastgpt_platform > backup.sql
+   
+   # 重新启动
+   docker-compose -f docker-compose.prod.yml up -d
+   
+   # 验证
+   docker-compose -f docker-compose.prod.yml ps
+   ```
+
+5. **回滚（如果出现问题）**
+   ```bash
+   docker-compose down
+   cp docker-compose.yml.backup docker-compose.yml
+   docker-compose up -d
+   ```
+
+### 生产环境配置检查清单
+
+部署到生产环境前，请确认：
+
+- [ ] 所有敏感信息使用环境变量
+- [ ] JWT_SECRET 和 SESSION_SECRET 已修改为强密码
+- [ ] 数据库密码已修改
+- [ ] CORS_ORIGIN 配置正确
+- [ ] 健康检查已配置
+- [ ] 日志轮转已启用
+- [ ] 资源限制已设置
+- [ ] 数据卷已配置持久化
+- [ ] 备份策略已实施
+- [ ] 监控告警已配置
+- [ ] SSL证书已配置（如果使用HTTPS）
+- [ ] 防火墙规则已配置
+
+## 📦 生产部署（原有内容）
 
 ### Docker部署
 
@@ -392,33 +1269,6 @@ docker-compose restart
 
 # 停止并删除
 docker-compose down -v
-```
-
-### 手动部署
-
-1. **构建前端**
-```bash
-cd frontend
-npm run build
-# 将dist目录部署到Nginx或其他静态服务器
-```
-
-2. **构建后端**
-```bash
-cd backend
-npm run build
-```
-
-3. **配置PostgreSQL和Redis**（生产环境）
-
-4. **运行数据库迁移**
-```bash
-npm run prisma:migrate:deploy
-```
-
-5. **启动应用**
-```bash
-NODE_ENV=production npm start
 ```
 
 ### Nginx配置示例
