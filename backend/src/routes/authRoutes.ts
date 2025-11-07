@@ -12,6 +12,7 @@ const isGithubOAuthEnabled = Boolean(env.oauth.github.clientId && env.oauth.gith
 
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.get('/oauth2/providers', authController.getOAuthProviders);
 router.post('/sso/login', authController.ssoLogin);
 router.get('/profile', authenticate, authController.getProfile);
 router.post('/logout', authController.logout);

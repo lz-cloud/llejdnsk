@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import { AccessLevel, AuthProvider, UserRole } from '@prisma/client';
+import { AccessLevel, AuthProvider, UserRole, Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 export interface KnowledgeBaseDTO {
@@ -41,6 +41,22 @@ export interface BulkPermissionDTO {
   knowledgeBaseIds: string[];
   accessLevel: AccessLevel;
 }
+
+type UserWithGroups = Prisma.UserGetPayload<{
+  include: { userGroups: { include: { group: true } } };
+}>;
+
+const mapUserWithGroups = (user: UserWithGroups) => {
+  const { password: _password, userGroups, ...rest } = user;
+
+  return {
+    ...rest,
+    groups: userGroups.map((membership) => ({
+      id: membership.group.id,
+      name: membership.group.name,
+    })),
+  };
+};
 
 class AdminService {
   // Knowledge Bases
@@ -137,7 +153,7 @@ class AdminService {
   async createOrUpdateUser(data: UserDTO) {
     const hashedPassword = data.password ? await bcrypt.hash(data.password, 10) : undefined;
 
-    const user = await prisma.user.upsert({
+    const upsertedUser = await prisma.user.upsert({
       where: { email: data.email },
       update: {
         displayName: data.displayName,
@@ -159,18 +175,31 @@ class AdminService {
 
     if (data.groups) {
       await prisma.userGroupMember.deleteMany({
-        where: { userId: user.id },
+        where: { userId: upsertedUser.id },
       });
 
-      await prisma.userGroupMember.createMany({
-        data: data.groups.map((groupId) => ({ userId: user.id, groupId })),
-        skipDuplicates: true,
-      });
+      if (data.groups.length > 0) {
+        await prisma.userGroupMember.createMany({
+          data: data.groups.map((groupId) => ({ userId: upsertedUser.id, groupId })),
+          skipDuplicates: true,
+        });
+      }
     }
 
-    const { password: _, ...userWithoutPassword } = user;
+    const userWithGroups = await prisma.user.findUnique({
+      where: { id: upsertedUser.id },
+      include: {
+        userGroups: {
+          include: { group: true },
+        },
+      },
+    });
 
-    return userWithoutPassword;
+    if (!userWithGroups) {
+      throw new Error('User not found after update');
+    }
+
+    return mapUserWithGroups(userWithGroups);
   }
 
   async listUsers() {
@@ -180,10 +209,7 @@ class AdminService {
       },
     });
 
-    return users.map((user) => {
-      const { password: _, ...rest } = user;
-      return rest;
-    });
+    return users.map((user) => mapUserWithGroups(user));
   }
 
   async deactivateUser(userId: string) {

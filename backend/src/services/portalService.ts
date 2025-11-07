@@ -37,6 +37,7 @@ class PortalService {
         knowledgeBases.set(access.knowledgeBase.id, {
           ...access.knowledgeBase,
           accessLevel: access.accessLevel,
+          isPublic: false,
         });
       }
     });
@@ -47,9 +48,27 @@ class PortalService {
           knowledgeBases.set(permission.knowledgeBase.id, {
             ...permission.knowledgeBase,
             accessLevel: permission.accessLevel,
+            isPublic: false,
           });
         }
       });
+    });
+
+    const publicKnowledgeBases = await prisma.knowledgeBase.findMany({
+      where: {
+        isActive: true,
+        groupPermissions: { none: {} },
+      },
+    });
+
+    publicKnowledgeBases.forEach((kb) => {
+      if (!knowledgeBases.has(kb.id)) {
+        knowledgeBases.set(kb.id, {
+          ...kb,
+          accessLevel: 'READ',
+          isPublic: true,
+        });
+      }
     });
 
     return Array.from(knowledgeBases.values()).sort((a, b) => a.displayOrder - b.displayOrder);

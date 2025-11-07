@@ -6,8 +6,9 @@ export interface KnowledgeBase {
   category?: string;
   icon?: string;
   displayOrder: number;
-  accessLevel: 'READ' | 'WRITE' | 'ADMIN';
+  accessLevel?: 'READ' | 'WRITE' | 'ADMIN';
   isActive: boolean;
+  isPublic?: boolean;
 }
 
 export interface RecentAccess {

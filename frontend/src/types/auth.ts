@@ -23,3 +23,8 @@ export interface SSOLoginPayload {
   encryptedParams: string;
   ssoConfigId: string;
 }
+
+export interface OAuthProviders {
+  google: boolean;
+  github: boolean;
+}

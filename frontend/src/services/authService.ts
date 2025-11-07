@@ -1,5 +1,5 @@
 import api from './api';
-import { AuthResponse, LoginPayload, SSOLoginPayload } from '../types/auth';
+import { AuthResponse, LoginPayload, SSOLoginPayload, OAuthProviders } from '../types/auth';
 
 const authService = {
   async login(payload: LoginPayload): Promise<AuthResponse> {
@@ -12,6 +12,10 @@ const authService = {
   },
   async getProfile(): Promise<AuthResponse> {
     const { data } = await api.get('/auth/profile');
+    return data.data;
+  },
+  async getOAuthProviders(): Promise<OAuthProviders> {
+    const { data } = await api.get('/auth/oauth2/providers');
     return data.data;
   },
   async logout(): Promise<void> {
