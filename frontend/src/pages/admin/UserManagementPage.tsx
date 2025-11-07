@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { Table, Button, Tag, Typography, message, Modal, Form, Input, Select, Switch, Space, Popconfirm } from 'antd';
 import { PlusOutlined, StopOutlined } from '@ant-design/icons';
 import adminService from '../../services/adminService';
-import { User, UserPayload } from '../../types/admin';
+import { User, UserPayload, UserGroup } from '../../types/admin';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [groups, setGroups] = useState<UserGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -26,8 +27,18 @@ const UserManagementPage = () => {
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const data = await adminService.listGroups();
+      setGroups(data);
+    } catch (error: any) {
+      message.error('获取用户组列表失败');
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchGroups();
   }, []);
 
   const handleOpenModal = (user?: User) => {
@@ -39,10 +50,11 @@ const UserManagementPage = () => {
         role: user.role,
         erpUserCode: user.erpUserCode,
         isActive: user.isActive,
+        groups: user.groups?.map((group) => group.id) || [],
       });
     } else {
       form.resetFields();
-      form.setFieldsValue({ isActive: true });
+      form.setFieldsValue({ isActive: true, groups: [] });
     }
     setModalVisible(true);
   };
@@ -59,6 +71,7 @@ const UserManagementPage = () => {
       message.success(editingUser ? '用户更新成功' : '用户创建成功');
       handleCloseModal();
       fetchUsers();
+      fetchGroups();
     } catch (error: any) {
       message.error(error.response?.data?.message || '保存失败');
     }
@@ -83,6 +96,24 @@ const UserManagementPage = () => {
       key: 'role',
       width: 100,
       render: (role: string) => <Tag color={role === 'ADMIN' ? 'red' : 'blue'}>{role}</Tag>,
+    },
+    {
+      title: '用户组',
+      dataIndex: 'groups',
+      key: 'groups',
+      width: 220,
+      render: (groupList: User['groups']) =>
+        groupList && groupList.length ? (
+          <Space size="small" wrap>
+            {groupList.map((group) => (
+              <Tag key={group.id} color="geekblue">
+                {group.name}
+              </Tag>
+            ))}
+          </Space>
+        ) : (
+          <Text type="secondary">未分组</Text>
+        ),
     },
     {
       title: '认证方式',
@@ -150,7 +181,7 @@ const UserManagementPage = () => {
         columns={columns}
         rowKey="id"
         loading={loading}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1400 }}
         pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条记录` }}
       />
 
@@ -181,6 +212,22 @@ const UserManagementPage = () => {
             <Select>
               <Option value="USER">普通用户</Option>
               <Option value="ADMIN">管理员</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item label="用户组" name="groups">
+            <Select
+              mode="multiple"
+              placeholder="选择用户所属用户组"
+              allowClear
+              showSearch
+              optionFilterProp="children"
+            >
+              {groups.map((group) => (
+                <Option key={group.id} value={group.id}>
+                  {group.name}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 

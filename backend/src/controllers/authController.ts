@@ -57,6 +57,19 @@ export const getProfile = async (req: Request, res: Response) => {
   }
 };
 
+export const getOAuthProviders = (_req: Request, res: Response) => {
+  const googleEnabled = Boolean(env.oauth.google.clientId && env.oauth.google.clientSecret);
+  const githubEnabled = Boolean(env.oauth.github.clientId && env.oauth.github.clientSecret);
+
+  res.json({
+    success: true,
+    data: {
+      google: googleEnabled,
+      github: githubEnabled,
+    },
+  });
+};
+
 export const logout = async (_req: Request, res: Response) => {
   res.clearCookie('token');
   res.json({ success: true, message: 'Logged out successfully' });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, Form, Input, Button, Typography, Divider, message } from 'antd';
 import { GoogleOutlined, GithubOutlined, LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -6,6 +6,7 @@ import { login, fetchProfile } from '../store/authSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import authService from '../services/authService';
 import { API_BASE_URL } from '../services/api';
+import { OAuthProviders } from '../types/auth';
 
 const { Title, Text } = Typography;
 
@@ -15,6 +16,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loadingOAuth, setLoadingOAuth] = useState(false);
+  const [oauthProviders, setOAuthProviders] = useState<OAuthProviders>({ google: false, github: false });
+  const errorShownRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (auth.isAuthenticated) {
@@ -26,6 +29,12 @@ const LoginPage = () => {
       }
     }
   }, [auth.isAuthenticated, dispatch, navigate]);
+
+  useEffect(() => {
+    authService.getOAuthProviders()
+      .then(setOAuthProviders)
+      .catch(() => setOAuthProviders({ google: false, github: false }));
+  }, []);
 
   useEffect(() => {
     const ssoParams = searchParams.get('sso');
@@ -50,6 +59,23 @@ const LoginPage = () => {
     }
   }, [dispatch, navigate, searchParams]);
 
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (!error) {
+      errorShownRef.current = null;
+      return;
+    }
+
+    if (error !== errorShownRef.current) {
+      if (error === 'oauth_failed') {
+        message.error('第三方登录失败，请重试');
+      } else if (error === 'auth_failed') {
+        message.error('认证失败，请重试');
+      }
+      errorShownRef.current = error;
+    }
+  }, [searchParams]);
+
   const handleLogin = async (values: { email: string; password: string }) => {
     try {
       await dispatch(login(values)).unwrap();
@@ -61,6 +87,11 @@ const LoginPage = () => {
   };
 
   const handleOAuthLogin = (provider: 'google' | 'github') => {
+    const providerEnabled = provider === 'google' ? oauthProviders.google : oauthProviders.github;
+    if (!providerEnabled) {
+      message.warning('该第三方登录暂未启用');
+      return;
+    }
     setLoadingOAuth(true);
     window.location.href = `${API_BASE_URL}/auth/oauth2/${provider}`;
   };
@@ -113,6 +144,8 @@ const LoginPage = () => {
           style={{ marginBottom: 12 }}
           onClick={() => handleOAuthLogin('google')}
           loading={loadingOAuth}
+          disabled={!oauthProviders.google}
+          title={!oauthProviders.google ? '请联系管理员启用 Google 登录' : undefined}
         >
           使用 Google 登录
         </Button>
@@ -123,6 +156,8 @@ const LoginPage = () => {
           size="large"
           onClick={() => handleOAuthLogin('github')}
           loading={loadingOAuth}
+          disabled={!oauthProviders.github}
+          title={!oauthProviders.github ? '请联系管理员启用 GitHub 登录' : undefined}
         >
           使用 GitHub 登录
         </Button>

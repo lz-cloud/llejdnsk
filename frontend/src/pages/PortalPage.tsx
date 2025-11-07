@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Row, Col, Card, Typography, Button, Tag, Empty, Input, Radio, Space, Spin, message } from 'antd';
 import { StarTwoTone, StarOutlined, GlobalOutlined } from '@ant-design/icons';
 import { KnowledgeBase } from '../types/portal';
@@ -16,20 +16,24 @@ const PortalPage = () => {
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
   const auth = useAppSelector((state) => state.auth);
 
-  const fetchKnowledgeBases = async () => {
+  const fetchKnowledgeBases = useCallback(async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const data = await portalService.getKnowledgeBases();
       setKnowledgeBases(data);
       setFilteredKnowledgeBases(data);
     } catch (error: any) {
       message.error(error.response?.data?.message || '获取知识库失败');
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
-  const fetchFavorites = async () => {
+  const fetchFavorites = useCallback(async () => {
     try {
       const data = await portalService.getFavorites();
       const favoritesMap: Record<string, boolean> = {};
@@ -40,12 +44,31 @@ const PortalPage = () => {
     } catch (error) {
       // ignore
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchKnowledgeBases();
     fetchFavorites();
-  }, []);
+    const interval = setInterval(() => {
+      fetchKnowledgeBases(false);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [fetchFavorites, fetchKnowledgeBases]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchKnowledgeBases(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchKnowledgeBases]);
 
   useEffect(() => {
     const filtered = knowledgeBases.filter((kb) => {
@@ -139,12 +162,13 @@ const PortalPage = () => {
                   title={knowledgeBase.name}
                   description={knowledgeBase.description || '暂无描述'}
                 />
-                <div style={{ marginTop: 16 }}>
+                <Space style={{ marginTop: 16 }} size="middle" wrap>
                   <Tag color="blue">{knowledgeBase.category || '未分类'}</Tag>
-                  <Text type="secondary" style={{ marginLeft: 12 }}>
-                    权限：{knowledgeBase.accessLevel}
+                  {knowledgeBase.isPublic && <Tag color="green">公开访问</Tag>}
+                  <Text type="secondary">
+                    权限：{knowledgeBase.isPublic ? '公开访问' : (knowledgeBase.accessLevel ?? 'READ')}
                   </Text>
-                </div>
+                </Space>
               </Card>
             </Col>
           ))}
@@ -157,9 +181,10 @@ const PortalPage = () => {
                 <Col flex="auto">
                   <Title level={4}>{kb.name}</Title>
                   <Paragraph type="secondary" ellipsis={{ rows: 2 }}>{kb.description}</Paragraph>
-                  <Space size="large">
+                  <Space size="large" wrap>
                     <Tag>{kb.category || '未分类'}</Tag>
-                    <Text type="secondary">权限：{kb.accessLevel}</Text>
+                    {kb.isPublic && <Tag color="green">公开</Tag>}
+                    <Text type="secondary">权限：{kb.isPublic ? '公开访问' : (kb.accessLevel ?? 'READ')}</Text>
                   </Space>
                 </Col>
                 <Col>

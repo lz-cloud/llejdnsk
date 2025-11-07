@@ -47,6 +47,11 @@ export interface SSOConfigPayload {
   allowedIPs?: string[];
 }
 
+export interface UserGroupSummary {
+  id: string;
+  name: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -57,6 +62,7 @@ export interface User {
   authProvider: string;
   createdAt: string;
   lastLoginAt?: string;
+  groups: UserGroupSummary[];
 }
 
 export interface UserPayload {
