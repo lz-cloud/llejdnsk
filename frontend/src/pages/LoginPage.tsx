@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from '../store';
 import { login, fetchProfile } from '../store/authSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import authService from '../services/authService';
+import { API_BASE_URL } from '../services/api';
 
 const { Title, Text } = Typography;
 
@@ -61,7 +62,7 @@ const LoginPage = () => {
 
   const handleOAuthLogin = (provider: 'google' | 'github') => {
     setLoadingOAuth(true);
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/oauth2/${provider}`;
+    window.location.href = `${API_BASE_URL}/auth/oauth2/${provider}`;
   };
 
   return (
