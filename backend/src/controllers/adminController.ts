@@ -172,3 +172,100 @@ export const getSystemStats = async (_req: Request, res: Response) => {
     res.status(500).json({ success: false, message: 'Failed to get system stats' });
   }
 };
+
+export const bulkImportUsers = async (req: Request, res: Response) => {
+  try {
+    const { users } = req.body;
+    if (!Array.isArray(users) || users.length === 0) {
+      return res.status(400).json({ success: false, message: 'users must be a non-empty array' });
+    }
+
+    const normalizedUsers = users.map((user: any) => ({
+      ...user,
+      groups: Array.isArray(user.groups) ? user.groups : [],
+    }));
+
+    const results = await adminService.bulkImportUsers(normalizedUsers);
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Failed to import users' });
+  }
+};
+
+export const bulkUpdateUserGroups = async (req: Request, res: Response) => {
+  try {
+    const { userIds, groupIds, replace } = req.body;
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'userIds must be a non-empty array' });
+    }
+    if (!Array.isArray(groupIds) || groupIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'groupIds must be a non-empty array' });
+    }
+
+    await adminService.bulkUpdateUserGroups({ userIds, groupIds, replace });
+    res.json({ success: true, message: 'User groups updated successfully' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Failed to update user groups' });
+  }
+};
+
+export const exportUsers = async (_req: Request, res: Response) => {
+  try {
+    const users = await adminService.exportUsers();
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to export users' });
+  }
+};
+
+export const createOrUpdateOAuth2Config = async (req: Request, res: Response) => {
+  try {
+    const config = await adminService.createOrUpdateOAuth2Config(req.body);
+    res.status(req.body.id ? 200 : 201).json({ success: true, data: config });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error instanceof Error ? error.message : 'Failed to save OAuth2 config' });
+  }
+};
+
+export const listOAuth2Configs = async (_req: Request, res: Response) => {
+  try {
+    const configs = await adminService.listOAuth2Configs();
+    res.json({ success: true, data: configs });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to list OAuth2 configs' });
+  }
+};
+
+export const getOAuth2Config = async (req: Request, res: Response) => {
+  try {
+    const config = await adminService.getOAuth2Config(req.params.id);
+    if (!config) {
+      return res.status(404).json({ success: false, message: 'OAuth2 config not found' });
+    }
+    res.json({ success: true, data: config });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to get OAuth2 config' });
+  }
+};
+
+export const toggleOAuth2Config = async (req: Request, res: Response) => {
+  try {
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'isActive must be a boolean' });
+    }
+    const config = await adminService.toggleOAuth2Config(req.params.id, isActive);
+    res.json({ success: true, data: config, message: `OAuth2 config ${isActive ? 'enabled' : 'disabled'} successfully` });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Failed to toggle OAuth2 config' });
+  }
+};
+
+export const deleteOAuth2Config = async (req: Request, res: Response) => {
+  try {
+    await adminService.deleteOAuth2Config(req.params.id);
+    res.json({ success: true, message: 'OAuth2 config deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Failed to delete OAuth2 config' });
+  }
+};

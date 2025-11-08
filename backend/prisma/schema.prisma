@@ -192,3 +192,19 @@ model Session {
   @@index([token])
   @@index([userId])
 }
+
+model OAuth2Config {
+  id              String      @id @default(uuid())
+  name            String      @unique
+  provider        String
+  clientId        String
+  clientSecret    String
+  callbackUrl     String
+  authUrl         String?
+  tokenUrl        String?
+  userInfoUrl     String?
+  scope           String[]    @default([])
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}

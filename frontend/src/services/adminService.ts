@@ -10,6 +10,11 @@ import {
   AccessAnalytics,
   SystemStats,
   BulkPermissionPayload,
+  BulkUserImportPayload,
+  BulkUserImportResult,
+  BulkUserGroupUpdatePayload,
+  OAuth2Config,
+  OAuth2ConfigPayload,
 } from '../types/admin';
 
 const adminService = {
@@ -76,6 +81,32 @@ const adminService = {
   async getSystemStats(): Promise<SystemStats> {
     const { data } = await api.get('/admin/system-stats');
     return data.data;
+  },
+  async bulkImportUsers(users: BulkUserImportPayload[]): Promise<BulkUserImportResult> {
+    const { data } = await api.post('/admin/users/bulk-import', { users });
+    return data.data;
+  },
+  async bulkUpdateUserGroups(payload: BulkUserGroupUpdatePayload): Promise<void> {
+    await api.post('/admin/users/bulk-update-groups', payload);
+  },
+  async exportUsers(): Promise<User[]> {
+    const { data } = await api.get('/admin/users/export');
+    return data.data;
+  },
+  async listOAuth2Configs(): Promise<OAuth2Config[]> {
+    const { data } = await api.get('/admin/oauth2-configs');
+    return data.data;
+  },
+  async createOrUpdateOAuth2Config(payload: OAuth2ConfigPayload): Promise<OAuth2Config> {
+    const { data } = await api.post('/admin/oauth2-configs', payload);
+    return data.data;
+  },
+  async toggleOAuth2Config(id: string, isActive: boolean): Promise<OAuth2Config> {
+    const { data } = await api.patch(`/admin/oauth2-configs/${id}`, { isActive });
+    return data.data;
+  },
+  async deleteOAuth2Config(id: string): Promise<void> {
+    await api.delete(`/admin/oauth2-configs/${id}`);
   },
 };
 

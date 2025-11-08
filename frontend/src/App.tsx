@@ -13,6 +13,7 @@ import FavoritesPage from './pages/FavoritesPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import KnowledgeBaseManagementPage from './pages/admin/KnowledgeBaseManagementPage';
 import SSOConfigPage from './pages/admin/SSOConfigPage';
+import OAuth2ConfigPage from './pages/admin/OAuth2ConfigPage';
 import UserManagementPage from './pages/admin/UserManagementPage';
 import GroupManagementPage from './pages/admin/GroupManagementPage';
 import AccessAnalyticsPage from './pages/admin/AccessAnalyticsPage';
@@ -62,6 +63,10 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         {
           key: '/admin/sso-config',
           label: <Link to="/admin/sso-config">SSO配置</Link>,
+        },
+        {
+          key: '/admin/oauth2-config',
+          label: <Link to="/admin/oauth2-config">OAuth2配置</Link>,
         },
         {
           key: '/admin/users',
@@ -155,6 +160,10 @@ function App() {
                 <Route
                   path="admin/sso-config"
                   element={(<AdminRoute><SSOConfigPage /></AdminRoute>)}
+                />
+                <Route
+                  path="admin/oauth2-config"
+                  element={(<AdminRoute><OAuth2ConfigPage /></AdminRoute>)}
                 />
                 <Route
                   path="admin/users"

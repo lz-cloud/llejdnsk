@@ -103,3 +103,53 @@ export interface BulkPermissionPayload {
   knowledgeBaseIds: string[];
   accessLevel: 'READ' | 'WRITE' | 'ADMIN';
 }
+
+export interface BulkUserImportPayload {
+  email: string;
+  displayName?: string;
+  role?: 'ADMIN' | 'USER';
+  password?: string;
+  erpUserCode?: string;
+  groups?: string[];
+}
+
+export interface BulkUserImportResult {
+  success: string[];
+  failed: { email: string; reason: string }[];
+}
+
+export interface BulkUserGroupUpdatePayload {
+  userIds: string[];
+  groupIds: string[];
+  replace?: boolean;
+}
+
+export interface OAuth2Config {
+  id: string;
+  name: string;
+  provider: string;
+  clientId: string;
+  clientSecret: string;
+  callbackUrl: string;
+  authUrl?: string;
+  tokenUrl?: string;
+  userInfoUrl?: string;
+  scope: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OAuth2ConfigPayload {
+  id?: string;
+  name: string;
+  provider: string;
+  clientId: string;
+  clientSecret: string;
+  callbackUrl: string;
+  authUrl?: string;
+  tokenUrl?: string;
+  userInfoUrl?: string;
+  scope?: string[];
+  isActive?: boolean;
+}
