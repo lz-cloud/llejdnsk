@@ -59,26 +59,27 @@ export const getProfile = async (req: Request, res: Response) => {
 
 export const getOAuthProviders = async (_req: Request, res: Response) => {
   try {
-    const googleEnabled = Boolean(env.oauth.google.clientId && env.oauth.google.clientSecret);
-    const githubEnabled = Boolean(env.oauth.github.clientId && env.oauth.github.clientSecret);
-
     const dbConfigs = await authService.getActiveOAuth2Providers();
+
+    const googleConfig = dbConfigs.find(config => config.provider.toUpperCase() === 'GOOGLE');
+    const githubConfig = dbConfigs.find(config => config.provider.toUpperCase() === 'GITHUB');
+
+    const googleEnabled = Boolean(googleConfig?.isActive && googleConfig.clientId && googleConfig.clientSecret);
+    const githubEnabled = Boolean(githubConfig?.isActive && githubConfig.clientId && githubConfig.clientSecret);
 
     res.json({
       success: true,
       data: {
         google: googleEnabled,
         github: githubEnabled,
-        custom: dbConfigs,
       },
     });
   } catch (error) {
     res.status(500).json({ 
       success: false, 
       data: {
-        google: Boolean(env.oauth.google.clientId && env.oauth.google.clientSecret),
-        github: Boolean(env.oauth.github.clientId && env.oauth.github.clientSecret),
-        custom: [],
+        google: false,
+        github: false,
       },
     });
   }

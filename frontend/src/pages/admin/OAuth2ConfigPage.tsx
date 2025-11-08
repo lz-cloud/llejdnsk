@@ -157,8 +157,13 @@ const OAuth2ConfigPage = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={3}>OAuth2 配置管理</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <Title level={3} style={{ marginBottom: 8 }}>OAuth2 配置管理</Title>
+          <Typography.Text type="secondary">
+            管理OAuth2登录提供商，启用或禁用第三方登录方式。默认已启用Google和GitHub登录。
+          </Typography.Text>
+        </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()}>
           新增配置
         </Button>

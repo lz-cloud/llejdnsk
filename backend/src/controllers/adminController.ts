@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import adminService from '../services/adminService';
+import { configurePassport } from '../config/passport';
 
 export const createKnowledgeBase = async (req: Request, res: Response) => {
   try {
@@ -221,6 +222,7 @@ export const exportUsers = async (_req: Request, res: Response) => {
 export const createOrUpdateOAuth2Config = async (req: Request, res: Response) => {
   try {
     const config = await adminService.createOrUpdateOAuth2Config(req.body);
+    await configurePassport();
     res.status(req.body.id ? 200 : 201).json({ success: true, data: config });
   } catch (error) {
     res.status(400).json({ success: false, message: error instanceof Error ? error.message : 'Failed to save OAuth2 config' });
@@ -255,6 +257,7 @@ export const toggleOAuth2Config = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'isActive must be a boolean' });
     }
     const config = await adminService.toggleOAuth2Config(req.params.id, isActive);
+    await configurePassport();
     res.json({ success: true, data: config, message: `OAuth2 config ${isActive ? 'enabled' : 'disabled'} successfully` });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Failed to toggle OAuth2 config' });
@@ -264,6 +267,7 @@ export const toggleOAuth2Config = async (req: Request, res: Response) => {
 export const deleteOAuth2Config = async (req: Request, res: Response) => {
   try {
     await adminService.deleteOAuth2Config(req.params.id);
+    await configurePassport();
     res.json({ success: true, message: 'OAuth2 config deleted successfully' });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Failed to delete OAuth2 config' });

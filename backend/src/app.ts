@@ -2,7 +2,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
-import passport from './config/passport';
+import passport, { configurePassport } from './config/passport';
 import { env } from './config/env';
 import { connectRedis } from './config/redis';
 import { errorHandler } from './middleware/errorHandler';
@@ -71,6 +71,9 @@ const startServer = async () => {
     logger.info('✓ Database connected');
 
     await initializeAdminUser();
+
+    await configurePassport();
+    logger.info('✓ OAuth2 strategies configured');
 
     app.listen(env.port, () => {
       logger.info(`✓ Server running on port ${env.port}`);
