@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Tag, Typography, message, Modal, Form, Input, Select, Switch, Space, Popconfirm } from 'antd';
-import { PlusOutlined, StopOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Typography, message, Modal, Form, Input, Select, Switch, Space, Popconfirm, Divider, Alert, Checkbox } from 'antd';
+import { PlusOutlined, StopOutlined, ImportOutlined, ExportOutlined, UsergroupAddOutlined } from '@ant-design/icons';
 import adminService from '../../services/adminService';
-import { User, UserPayload, UserGroup } from '../../types/admin';
+import { User, UserPayload, UserGroup, BulkUserImportResult } from '../../types/admin';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { TextArea } = Input;
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -14,6 +15,14 @@ const UserManagementPage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [form] = Form.useForm();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [bulkGroupModalVisible, setBulkGroupModalVisible] = useState(false);
+  const [bulkImportModalVisible, setBulkImportModalVisible] = useState(false);
+  const [bulkImportForm] = Form.useForm();
+  const [bulkGroupForm] = Form.useForm();
+  const [importResult, setImportResult] = useState<BulkUserImportResult | null>(null);
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkGroupUpdating, setBulkGroupUpdating] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -85,6 +94,94 @@ const UserManagementPage = () => {
     } catch (error: any) {
       message.error('禁用失败');
     }
+  };
+
+  const handleExportUsers = async () => {
+    try {
+      const data = await adminService.exportUsers();
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `users_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      message.success('导出成功');
+    } catch (error: any) {
+      message.error('导出失败');
+    }
+  };
+
+  const handleBulkImport = () => {
+    setBulkImportModalVisible(true);
+    setImportResult(null);
+    bulkImportForm.resetFields();
+  };
+
+  const handleBulkImportSubmit = async (values: { jsonData: string }) => {
+    try {
+      setBulkImporting(true);
+      const users = JSON.parse(values.jsonData);
+      if (!Array.isArray(users)) {
+        message.error('数据格式错误，请提供用户数组');
+        return;
+      }
+      const result = await adminService.bulkImportUsers(users);
+      setImportResult(result);
+      if (result.success.length > 0) {
+        message.success(`成功导入 ${result.success.length} 个用户`);
+        fetchUsers();
+      }
+      if (result.failed.length > 0) {
+        message.warning(`${result.failed.length} 个用户导入失败`);
+      }
+    } catch (error: any) {
+      message.error('导入失败: ' + (error.message || '未知错误'));
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
+  const handleBulkUpdateGroups = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请先选择要修改的用户');
+      return;
+    }
+    setBulkGroupModalVisible(true);
+    bulkGroupForm.resetFields();
+  };
+
+  const handleBulkGroupSubmit = async (values: { groupIds: string[]; replace: boolean }) => {
+    try {
+      setBulkGroupUpdating(true);
+      await adminService.bulkUpdateUserGroups({
+        userIds: selectedRowKeys,
+        groupIds: values.groupIds,
+        replace: values.replace,
+      });
+      message.success(`成功更新 ${selectedRowKeys.length} 个用户的分组`);
+      setBulkGroupModalVisible(false);
+      setSelectedRowKeys([]);
+      fetchUsers();
+    } catch (error: any) {
+      message.error('批量更新失败');
+    } finally {
+      setBulkGroupUpdating(false);
+    }
+  };
+
+  const handleBulkGroupCancel = () => {
+    setBulkGroupModalVisible(false);
+    bulkGroupForm.resetFields();
+  };
+
+  const handleBulkImportCancel = () => {
+    setBulkImportModalVisible(false);
+    setImportResult(null);
+    bulkImportForm.resetFields();
   };
 
   const columns = [
@@ -167,13 +264,34 @@ const UserManagementPage = () => {
     },
   ];
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys: (string | number)[]) => setSelectedRowKeys(keys as string[]),
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={3}>用户管理</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()}>
-          新增用户
-        </Button>
+        <Space>
+          {selectedRowKeys.length > 0 && (
+            <Button
+              icon={<UsergroupAddOutlined />}
+              onClick={handleBulkUpdateGroups}
+            >
+              批量修改分组 ({selectedRowKeys.length})
+            </Button>
+          )}
+          <Button icon={<ImportOutlined />} onClick={handleBulkImport}>
+            批量导入
+          </Button>
+          <Button icon={<ExportOutlined />} onClick={handleExportUsers}>
+            导出用户
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()}>
+            新增用户
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -183,6 +301,7 @@ const UserManagementPage = () => {
         loading={loading}
         scroll={{ x: 1400 }}
         pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条记录` }}
+        rowSelection={rowSelection}
       />
 
       <Modal
@@ -255,6 +374,139 @@ const UserManagementPage = () => {
                 保存
               </Button>
               <Button onClick={handleCloseModal}>取消</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="批量导入用户"
+        open={bulkImportModalVisible}
+        onCancel={handleBulkImportCancel}
+        footer={null}
+        width={700}
+      >
+        <Alert
+          message="导入说明"
+          description={
+            <div>
+              <p>请提供JSON格式的用户数据数组，每个用户对象包含以下字段：</p>
+              <ul>
+                <li><strong>email</strong>（必填）: 用户邮箱</li>
+                <li><strong>displayName</strong>（可选）: 显示名称</li>
+                <li><strong>role</strong>（可选）: USER 或 ADMIN，默认 USER</li>
+                <li><strong>password</strong>（可选）: 密码，不填则自动生成默认密码</li>
+                <li><strong>erpUserCode</strong>（可选）: ERP用户编码</li>
+                <li><strong>groups</strong>（可选）: 用户组ID数组</li>
+              </ul>
+              <p>示例：</p>
+              <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4 }}>
+{`[
+  {
+    "email": "user1@example.com",
+    "displayName": "用户1",
+    "role": "USER",
+    "password": "Password123!",
+    "groups": []
+  }
+]`}
+              </pre>
+            </div>
+          }
+          type="info"
+          style={{ marginBottom: 16 }}
+        />
+
+        {importResult && (
+          <>
+            {importResult.success.length > 0 && (
+              <Alert
+                message={`成功导入 ${importResult.success.length} 个用户`}
+                description={importResult.success.join(', ')}
+                type="success"
+                style={{ marginBottom: 12 }}
+              />
+            )}
+            {importResult.failed.length > 0 && (
+              <Alert
+                message={`${importResult.failed.length} 个用户导入失败`}
+                description={
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    {importResult.failed.map((item, idx) => (
+                      <li key={idx}>
+                        {item.email}: {item.reason}
+                      </li>
+                    ))}
+                  </ul>
+                }
+                type="error"
+                style={{ marginBottom: 12 }}
+              />
+            )}
+            <Divider />
+          </>
+        )}
+
+        <Form form={bulkImportForm} layout="vertical" onFinish={handleBulkImportSubmit}>
+          <Form.Item
+            label="JSON数据"
+            name="jsonData"
+            rules={[{ required: true, message: '请输入JSON数据' }]}
+          >
+            <TextArea
+              rows={10}
+              placeholder='[{"email": "user@example.com", "displayName": "用户名"}]'
+            />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={bulkImporting}>
+                导入
+              </Button>
+              <Button onClick={handleBulkImportCancel}>取消</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`批量修改用户组 (已选择 ${selectedRowKeys.length} 个用户)`}
+        open={bulkGroupModalVisible}
+        onCancel={handleBulkGroupCancel}
+        footer={null}
+        width={500}
+      >
+        <Form form={bulkGroupForm} layout="vertical" onFinish={handleBulkGroupSubmit}>
+          <Form.Item
+            label="用户组"
+            name="groupIds"
+            rules={[{ required: true, message: '请选择至少一个用户组' }]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="选择用户组"
+              allowClear
+              showSearch
+              optionFilterProp="children"
+            >
+              {groups.map((group) => (
+                <Option key={group.id} value={group.id}>
+                  {group.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="replace" valuePropName="checked" initialValue={false}>
+            <Checkbox>替换现有分组（如果不勾选，将追加到现有分组）</Checkbox>
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={bulkGroupUpdating}>
+                确认修改
+              </Button>
+              <Button onClick={handleBulkGroupCancel}>取消</Button>
             </Space>
           </Form.Item>
         </Form>

@@ -310,6 +310,13 @@ class AuthService {
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
+
+  async getActiveOAuth2Providers() {
+    return prisma.oAuth2Config.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }
 
 export default new AuthService();

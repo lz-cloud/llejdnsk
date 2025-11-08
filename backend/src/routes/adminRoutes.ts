@@ -29,6 +29,9 @@ router.route('/users')
   .post(adminController.createOrUpdateUser);
 
 router.post('/users/:id/deactivate', adminController.deactivateUser);
+router.post('/users/bulk-import', adminController.bulkImportUsers);
+router.post('/users/bulk-update-groups', adminController.bulkUpdateUserGroups);
+router.get('/users/export', adminController.exportUsers);
 
 router.route('/groups')
   .get(adminController.listGroups)
@@ -38,5 +41,14 @@ router.post('/bulk-permissions', adminController.bulkAssignPermissions);
 
 router.get('/access-analytics', adminController.getAccessAnalytics);
 router.get('/system-stats', adminController.getSystemStats);
+
+router.route('/oauth2-configs')
+  .get(adminController.listOAuth2Configs)
+  .post(adminController.createOrUpdateOAuth2Config);
+
+router.route('/oauth2-configs/:id')
+  .get(adminController.getOAuth2Config)
+  .patch(adminController.toggleOAuth2Config)
+  .delete(adminController.deleteOAuth2Config);
 
 export default router;

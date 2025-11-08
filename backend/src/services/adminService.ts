@@ -42,6 +42,35 @@ export interface BulkPermissionDTO {
   accessLevel: AccessLevel;
 }
 
+export interface BulkUserGroupUpdateDTO {
+  userIds: string[];
+  groupIds: string[];
+  replace?: boolean;
+}
+
+export interface BulkUserImportDTO {
+  email: string;
+  displayName?: string;
+  role?: UserRole;
+  password?: string;
+  erpUserCode?: string;
+  groups?: string[];
+}
+
+export interface OAuth2ConfigDTO {
+  id?: string;
+  name: string;
+  provider: string;
+  clientId: string;
+  clientSecret: string;
+  callbackUrl: string;
+  authUrl?: string;
+  tokenUrl?: string;
+  userInfoUrl?: string;
+  scope?: string[];
+  isActive?: boolean;
+}
+
 type UserWithGroups = Prisma.UserGetPayload<{
   include: { userGroups: { include: { group: true } } };
 }>;
@@ -299,6 +328,140 @@ class AdminService {
       ssoConfigCount,
       recentAccessCount,
     };
+  }
+
+  async bulkImportUsers(users: BulkUserImportDTO[]) {
+    const results = {
+      success: [] as string[],
+      failed: [] as { email: string; reason: string }[],
+    };
+
+    for (const userData of users) {
+      try {
+        const hashedPassword = userData.password ? await bcrypt.hash(userData.password, 10) : await bcrypt.hash('DefaultPassword@123', 10);
+
+        const user = await prisma.user.upsert({
+          where: { email: userData.email },
+          update: {
+            displayName: userData.displayName,
+            role: userData.role || UserRole.USER,
+            erpUserCode: userData.erpUserCode,
+            ...(hashedPassword ? { password: hashedPassword } : {}),
+          },
+          create: {
+            email: userData.email,
+            displayName: userData.displayName,
+            role: userData.role || UserRole.USER,
+            password: hashedPassword,
+            erpUserCode: userData.erpUserCode,
+            authProvider: AuthProvider.LOCAL,
+            isActive: true,
+          },
+        });
+
+        if (userData.groups && userData.groups.length > 0) {
+          await prisma.userGroupMember.deleteMany({
+            where: { userId: user.id },
+          });
+
+          await prisma.userGroupMember.createMany({
+            data: userData.groups.map((groupId) => ({ userId: user.id, groupId })),
+            skipDuplicates: true,
+          });
+        }
+
+        results.success.push(userData.email);
+      } catch (error) {
+        results.failed.push({
+          email: userData.email,
+          reason: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return results;
+  }
+
+  async bulkUpdateUserGroups(data: BulkUserGroupUpdateDTO) {
+    const { userIds, groupIds, replace = false } = data;
+
+    if (replace) {
+      await prisma.userGroupMember.deleteMany({
+        where: { userId: { in: userIds } },
+      });
+    }
+
+    const memberships = userIds.flatMap((userId) =>
+      groupIds.map((groupId) => ({ userId, groupId }))
+    );
+
+    await prisma.userGroupMember.createMany({
+      data: memberships,
+      skipDuplicates: true,
+    });
+  }
+
+  async exportUsers() {
+    const users = await prisma.user.findMany({
+      include: {
+        userGroups: {
+          include: { group: true },
+        },
+      },
+    });
+
+    return users.map((user) => mapUserWithGroups(user));
+  }
+
+  async createOrUpdateOAuth2Config(data: OAuth2ConfigDTO) {
+    if (data.id) {
+      const { id, scope, ...updateData } = data;
+      return prisma.oAuth2Config.update({
+        where: { id },
+        data: {
+          ...updateData,
+          ...(scope !== undefined ? { scope } : {}),
+        },
+      });
+    }
+
+    return prisma.oAuth2Config.create({
+      data: {
+        name: data.name,
+        provider: data.provider,
+        clientId: data.clientId,
+        clientSecret: data.clientSecret,
+        callbackUrl: data.callbackUrl,
+        authUrl: data.authUrl,
+        tokenUrl: data.tokenUrl,
+        userInfoUrl: data.userInfoUrl,
+        scope: data.scope || [],
+        isActive: data.isActive ?? true,
+      },
+    });
+  }
+
+  async listOAuth2Configs() {
+    return prisma.oAuth2Config.findMany();
+  }
+
+  async getOAuth2Config(id: string) {
+    return prisma.oAuth2Config.findUnique({
+      where: { id },
+    });
+  }
+
+  async toggleOAuth2Config(id: string, isActive: boolean) {
+    return prisma.oAuth2Config.update({
+      where: { id },
+      data: { isActive },
+    });
+  }
+
+  async deleteOAuth2Config(id: string) {
+    await prisma.oAuth2Config.delete({
+      where: { id },
+    });
   }
 }
 

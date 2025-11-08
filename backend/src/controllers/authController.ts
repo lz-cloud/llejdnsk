@@ -57,17 +57,31 @@ export const getProfile = async (req: Request, res: Response) => {
   }
 };
 
-export const getOAuthProviders = (_req: Request, res: Response) => {
-  const googleEnabled = Boolean(env.oauth.google.clientId && env.oauth.google.clientSecret);
-  const githubEnabled = Boolean(env.oauth.github.clientId && env.oauth.github.clientSecret);
+export const getOAuthProviders = async (_req: Request, res: Response) => {
+  try {
+    const googleEnabled = Boolean(env.oauth.google.clientId && env.oauth.google.clientSecret);
+    const githubEnabled = Boolean(env.oauth.github.clientId && env.oauth.github.clientSecret);
 
-  res.json({
-    success: true,
-    data: {
-      google: googleEnabled,
-      github: githubEnabled,
-    },
-  });
+    const dbConfigs = await authService.getActiveOAuth2Providers();
+
+    res.json({
+      success: true,
+      data: {
+        google: googleEnabled,
+        github: githubEnabled,
+        custom: dbConfigs,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      data: {
+        google: Boolean(env.oauth.google.clientId && env.oauth.google.clientSecret),
+        github: Boolean(env.oauth.github.clientId && env.oauth.github.clientSecret),
+        custom: [],
+      },
+    });
+  }
 };
 
 export const logout = async (_req: Request, res: Response) => {
