@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Card, Typography, Button, Empty, Spin, message } from 'antd';
 import { GlobalOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Favorite } from '../types/portal';
+import { Favorite, KnowledgeBase } from '../types/portal';
 import portalService from '../services/portalService';
+import KnowledgeBaseViewer from '../components/KnowledgeBaseViewer';
 
 const { Title, Paragraph } = Typography;
 
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<KnowledgeBase | null>(null);
 
   const loadFavorites = async () => {
     try {
@@ -26,8 +28,17 @@ const FavoritesPage = () => {
     loadFavorites();
   }, []);
 
-  const handleOpenKnowledgeBase = (url: string) => {
-    window.open(url, '_blank');
+  const handleOpenKnowledgeBase = async (favorite: Favorite) => {
+    setSelectedKnowledgeBase(favorite.knowledgeBase);
+    try {
+      await portalService.recordAccess(favorite.knowledgeBaseId);
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '记录访问失败');
+    }
+  };
+
+  const handleCloseViewer = () => {
+    setSelectedKnowledgeBase(null);
   };
 
   const handleRemoveFavorite = async (id: string) => {
@@ -63,7 +74,7 @@ const FavoritesPage = () => {
           <Card
             key={favorite.id}
             actions={[
-              <Button type="link" icon={<GlobalOutlined />} onClick={() => handleOpenKnowledgeBase(favorite.knowledgeBase.url)}>
+              <Button type="link" icon={<GlobalOutlined />} onClick={() => handleOpenKnowledgeBase(favorite)}>
                 访问
               </Button>,
               <Button type="link" icon={<DeleteOutlined />} danger onClick={() => handleRemoveFavorite(favorite.id)}>
@@ -76,6 +87,12 @@ const FavoritesPage = () => {
           </Card>
         ))}
       </div>
+
+      <KnowledgeBaseViewer
+        open={!!selectedKnowledgeBase}
+        knowledgeBase={selectedKnowledgeBase}
+        onClose={handleCloseViewer}
+      />
     </div>
   );
 };
