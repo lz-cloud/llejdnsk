@@ -24,6 +24,13 @@ export interface SSOConfigDTO {
   tokenValidity?: number;
   isActive?: boolean;
   allowedIPs?: string[];
+  userCodeParamName?: string;
+  userCodeEncryption?: string;
+  pageUrlParamName?: string;
+  timestampParamName?: string;
+  appCodeParamName?: string;
+  appCodeValue?: string;
+  enableThirdPartyMapping?: boolean;
 }
 
 export interface UserDTO {
@@ -151,6 +158,13 @@ class AdminService {
         tokenValidity: data.tokenValidity || 5,
         isActive: data.isActive ?? true,
         allowedIPs: data.allowedIPs || [],
+        userCodeParamName: data.userCodeParamName || 'UserCode',
+        userCodeEncryption: data.userCodeEncryption || 'DES',
+        pageUrlParamName: data.pageUrlParamName || 'PageUrl',
+        timestampParamName: data.timestampParamName || 'iat',
+        appCodeParamName: data.appCodeParamName,
+        appCodeValue: data.appCodeValue,
+        enableThirdPartyMapping: data.enableThirdPartyMapping ?? false,
       },
     });
   }

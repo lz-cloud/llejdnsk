@@ -173,25 +173,44 @@ class AuthService {
       const decryptedParams = desEncryption.decrypt(decodeURIComponent(data.encryptedParams));
       const params = JSON.parse(decryptedParams);
 
-      if (!params.UserCode || !params.iat) {
-        throw new Error('Invalid SSO parameters');
+      const userCodeParamName = ssoConfig.userCodeParamName || 'UserCode';
+      const timestampParamName = ssoConfig.timestampParamName || 'iat';
+      const pageUrlParamName = ssoConfig.pageUrlParamName || 'PageUrl';
+
+      if (!params[userCodeParamName] || !params[timestampParamName]) {
+        throw new Error('Invalid SSO parameters: missing user code or timestamp');
       }
 
-      const isTimestampValid = DESEncryption.verifySSOTimestamp(params.iat, ssoConfig.tokenValidity);
+      const timestampValue = Number(params[timestampParamName]);
+      if (!Number.isFinite(timestampValue)) {
+        throw new Error('Invalid timestamp format');
+      }
+
+      const isTimestampValid = DESEncryption.verifySSOTimestamp(timestampValue, ssoConfig.tokenValidity);
       if (!isTimestampValid) {
         throw new Error('SSO token expired or invalid timestamp');
       }
 
+      if (ssoConfig.appCodeValue) {
+        const appCodeParamName = ssoConfig.appCodeParamName || 'appcode';
+        const requestAppCode = params[appCodeParamName];
+        if (!requestAppCode || requestAppCode !== ssoConfig.appCodeValue) {
+          throw new Error('Invalid application code');
+        }
+      }
+
+      const userCode = params[userCodeParamName];
+
       let user = await prisma.user.findUnique({
-        where: { erpUserCode: params.UserCode },
+        where: { erpUserCode: userCode },
       });
 
       if (!user) {
         user = await prisma.user.create({
           data: {
-            email: `${params.UserCode}@sso.local`,
-            erpUserCode: params.UserCode,
-            displayName: params.UserCode,
+            email: `${userCode}@sso.local`,
+            erpUserCode: userCode,
+            displayName: userCode,
             authProvider: AuthProvider.SSO,
           },
         });
@@ -224,7 +243,7 @@ class AuthService {
 
       const { password: _, ...userWithoutPassword } = user;
 
-      return { user: userWithoutPassword, token, redirectUrl: params.PageUrl };
+      return { user: userWithoutPassword, token, redirectUrl: params[pageUrlParamName] };
     } catch (error) {
       logger.error('SSO login error:', error);
       

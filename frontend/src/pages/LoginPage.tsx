@@ -33,7 +33,10 @@ const LoginPage = () => {
   useEffect(() => {
     authService.getOAuthProviders()
       .then(setOAuthProviders)
-      .catch(() => setOAuthProviders({ google: false, github: false }));
+      .catch((error) => {
+        console.error('Failed to fetch OAuth providers:', error);
+        setOAuthProviders({ google: false, github: false });
+      });
   }, []);
 
   useEffect(() => {
