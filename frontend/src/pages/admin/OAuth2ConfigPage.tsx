@@ -54,7 +54,7 @@ const OAuth2ConfigPage = () => {
       const scopeArray = values.scope
         ? values.scope.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
-      const payload = editingConfig
+      const payload: OAuth2ConfigPayload = editingConfig
         ? { ...values, id: editingConfig.id, scope: scopeArray }
         : { ...values, scope: scopeArray };
       await adminService.createOrUpdateOAuth2Config(payload);
@@ -65,6 +65,7 @@ const OAuth2ConfigPage = () => {
       message.error(error.response?.data?.message || '保存失败');
     }
   };
+
 
   const handleDelete = async (id: string) => {
     try {

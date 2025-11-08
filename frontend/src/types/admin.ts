@@ -31,6 +31,13 @@ export interface SSOConfig {
   tokenValidity: number;
   isActive: boolean;
   allowedIPs: string[];
+  userCodeParamName?: string;
+  userCodeEncryption?: string;
+  pageUrlParamName?: string;
+  timestampParamName?: string;
+  appCodeParamName?: string;
+  appCodeValue?: string;
+  enableThirdPartyMapping?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +52,13 @@ export interface SSOConfigPayload {
   tokenValidity?: number;
   isActive?: boolean;
   allowedIPs?: string[];
+  userCodeParamName?: string;
+  userCodeEncryption?: string;
+  pageUrlParamName?: string;
+  timestampParamName?: string;
+  appCodeParamName?: string;
+  appCodeValue?: string;
+  enableThirdPartyMapping?: boolean;
 }
 
 export interface UserGroupSummary {

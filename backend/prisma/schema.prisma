@@ -152,17 +152,24 @@ model UserFavorite {
 }
 
 model SSOConfig {
-  id              String      @id @default(uuid())
-  name            String      @unique
-  desKey          String
-  desIV           String
-  desPadding      String      @default("pkcs5padding")
-  desMode         String      @default("CBC")
-  tokenValidity   Int         @default(5)
-  isActive        Boolean     @default(true)
-  allowedIPs      String[]    @default([])
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id                        String      @id @default(uuid())
+  name                      String      @unique
+  desKey                    String
+  desIV                     String
+  desPadding                String      @default("pkcs5padding")
+  desMode                   String      @default("CBC")
+  tokenValidity             Int         @default(5)
+  isActive                  Boolean     @default(true)
+  allowedIPs                String[]    @default([])
+  userCodeParamName         String      @default("UserCode")
+  userCodeEncryption        String      @default("DES")
+  pageUrlParamName          String      @default("PageUrl")
+  timestampParamName        String      @default("iat")
+  appCodeParamName          String?
+  appCodeValue              String?
+  enableThirdPartyMapping   Boolean     @default(false)
+  createdAt                 DateTime    @default(now())
+  updatedAt                 DateTime    @updatedAt
 }
 
 model LoginAuditLog {
