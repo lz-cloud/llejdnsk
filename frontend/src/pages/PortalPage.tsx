@@ -4,6 +4,7 @@ import { StarTwoTone, StarOutlined, GlobalOutlined } from '@ant-design/icons';
 import { KnowledgeBase } from '../types/portal';
 import portalService from '../services/portalService';
 import { useAppSelector } from '../store';
+import KnowledgeBaseViewer from '../components/KnowledgeBaseViewer';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -14,6 +15,7 @@ const PortalPage = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [search, setSearch] = useState('');
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<KnowledgeBase | null>(null);
   const auth = useAppSelector((state) => state.auth);
 
   const fetchKnowledgeBases = useCallback(async (showLoading = true) => {
@@ -84,12 +86,16 @@ const PortalPage = () => {
   }, [search, knowledgeBases]);
 
   const handleOpenKnowledgeBase = async (knowledgeBase: KnowledgeBase) => {
+    setSelectedKnowledgeBase(knowledgeBase);
     try {
       await portalService.recordAccess(knowledgeBase.id);
-      window.open(knowledgeBase.url, '_blank');
     } catch (error: any) {
       message.error(error.response?.data?.message || '记录访问失败');
     }
+  };
+
+  const handleCloseViewer = () => {
+    setSelectedKnowledgeBase(null);
   };
 
   const handleToggleFavorite = async (knowledgeBase: KnowledgeBase) => {
@@ -200,6 +206,12 @@ const PortalPage = () => {
           ))}
         </div>
       )}
+
+      <KnowledgeBaseViewer
+        open={!!selectedKnowledgeBase}
+        knowledgeBase={selectedKnowledgeBase}
+        onClose={handleCloseViewer}
+      />
     </div>
   );
 };

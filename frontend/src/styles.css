@@ -37,3 +37,52 @@ body {
   align-items: center;
   min-height: 400px;
 }
+
+.knowledge-base-viewer-modal .ant-modal {
+  max-width: 100vw;
+  margin: 0;
+  top: 0;
+  padding-bottom: 0;
+}
+
+.knowledge-base-viewer-modal .ant-modal-content {
+  height: 100vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.knowledge-base-viewer-modal .ant-modal-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+}
+
+.knowledge-base-viewer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: #fff;
+}
+
+.knowledge-base-viewer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  min-height: 56px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.knowledge-base-viewer__body {
+  flex: 1;
+  background: #f0f2f5;
+}
+
+.knowledge-base-viewer__body iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}

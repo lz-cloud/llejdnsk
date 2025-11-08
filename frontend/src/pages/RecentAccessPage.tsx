@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { List, Typography, Button, Card, Tag, Empty, Spin, message } from 'antd';
 import { ClockCircleOutlined, GlobalOutlined } from '@ant-design/icons';
-import { RecentAccess } from '../types/portal';
+import { RecentAccess, KnowledgeBase } from '../types/portal';
 import portalService from '../services/portalService';
 import dayjs from 'dayjs';
+import KnowledgeBaseViewer from '../components/KnowledgeBaseViewer';
 
 const { Title, Text } = Typography;
 
 const RecentAccessPage = () => {
   const [recentAccess, setRecentAccess] = useState<RecentAccess[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState<KnowledgeBase | null>(null);
 
   useEffect(() => {
     const fetchRecentAccess = async () => {
@@ -26,8 +28,17 @@ const RecentAccessPage = () => {
     fetchRecentAccess();
   }, []);
 
-  const handleOpenKnowledgeBase = (kb: RecentAccess) => {
-    window.open(kb.knowledgeBase.url, '_blank');
+  const handleOpenKnowledgeBase = async (kb: RecentAccess) => {
+    setSelectedKnowledgeBase(kb.knowledgeBase);
+    try {
+      await portalService.recordAccess(kb.knowledgeBaseId);
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '记录访问失败');
+    }
+  };
+
+  const handleCloseViewer = () => {
+    setSelectedKnowledgeBase(null);
   };
 
   if (loading) {
@@ -67,6 +78,12 @@ const RecentAccessPage = () => {
             </div>
           </Card>
         )}
+      />
+
+      <KnowledgeBaseViewer
+        open={!!selectedKnowledgeBase}
+        knowledgeBase={selectedKnowledgeBase}
+        onClose={handleCloseViewer}
       />
     </div>
   );
