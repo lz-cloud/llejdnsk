@@ -9,6 +9,13 @@ const resolveApiUrl = () => {
   }
 
   if (typeof window !== 'undefined' && window.location) {
+    const { protocol, hostname, port } = window.location;
+
+    if (port === '3000') {
+      const devOrigin = `${protocol}//${hostname}:5000`;
+      return `${sanitizeUrl(devOrigin)}/api`;
+    }
+
     return `${sanitizeUrl(window.location.origin)}/api`;
   }
 

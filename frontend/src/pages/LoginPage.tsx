@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, Form, Input, Button, Typography, Divider, message } from 'antd';
 import { GoogleOutlined, GithubOutlined, LockOutlined, UserOutlined } from '@ant-design/icons';
+import PasswordInput from '../components/PasswordInput';
 import { useAppDispatch, useAppSelector } from '../store';
 import { login, fetchProfile } from '../store/authSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -128,7 +129,7 @@ const LoginPage = () => {
             label="密码"
             rules={[{ required: true, message: '请输入密码' }]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="请输入密码" size="large" />
+            <PasswordInput prefix={<LockOutlined />} placeholder="请输入密码" size="large" />
           </Form.Item>
 
           <Form.Item>

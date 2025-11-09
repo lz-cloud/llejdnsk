@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Switch, Space, Typography, message, Tag, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import PasswordInput from '../../components/PasswordInput';
 import adminService from '../../services/adminService';
 import { OAuth2Config, OAuth2ConfigPayload } from '../../types/admin';
 
@@ -216,7 +217,7 @@ const OAuth2ConfigPage = () => {
             name="clientSecret" 
             rules={[{ required: true, message: '请输入Client Secret' }]}
           >
-            <Input.Password placeholder="从OAuth2提供商获取" />
+            <PasswordInput placeholder="从OAuth2提供商获取" />
           </Form.Item>
 
           <Form.Item 
