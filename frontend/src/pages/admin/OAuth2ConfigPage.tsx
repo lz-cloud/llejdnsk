@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Switch, Space, Typography, message, Tag, Popconfirm } from 'antd';
+import { Table, Button, Modal, Form, Input, Switch, Space, Typography, message, Tag, Popconfirm, Spin } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import PasswordInput from '../../components/PasswordInput';
 import adminService from '../../services/adminService';
@@ -14,6 +14,7 @@ const OAuth2ConfigPage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingConfig, setEditingConfig] = useState<OAuth2Config | null>(null);
   const [form] = Form.useForm();
+  const [modalLoading, setModalLoading] = useState(false);
 
   const fetchConfigs = async () => {
     try {
@@ -31,22 +32,37 @@ const OAuth2ConfigPage = () => {
     fetchConfigs();
   }, []);
 
-  const handleOpenModal = (config?: OAuth2Config) => {
-    setEditingConfig(config || null);
+  const handleOpenModal = async (config?: OAuth2Config) => {
     if (config) {
-      form.setFieldsValue({
-        ...config,
-        scope: config.scope?.join(', ') || '',
-      });
+      setModalVisible(true);
+      setModalLoading(true);
+      try {
+        const fullConfig = await adminService.getOAuth2Config(config.id);
+        setEditingConfig(fullConfig);
+        form.setFieldsValue({
+          ...fullConfig,
+          scope: fullConfig.scope?.join(', ') || '',
+        });
+      } catch (error: any) {
+        message.error(error.response?.data?.message || '加载配置失败');
+        setModalVisible(false);
+      } finally {
+        setModalLoading(false);
+      }
     } else {
+      setEditingConfig(null);
       form.resetFields();
+      form.setFieldsValue({
+        isActive: true,
+      });
+      setModalVisible(true);
     }
-    setModalVisible(true);
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     setEditingConfig(null);
+    setModalLoading(false);
     form.resetFields();
   };
 
@@ -187,79 +203,85 @@ const OAuth2ConfigPage = () => {
         footer={null}
         width={700}
       >
-        <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Form.Item 
-            label="配置名称" 
-            name="name" 
-            rules={[{ required: true, message: '请输入配置名称' }]}
-          >
-            <Input placeholder="例如：Google OAuth" />
-          </Form.Item>
+        {modalLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <Spin size="large" tip="加载中..." />
+          </div>
+        ) : (
+          <Form form={form} layout="vertical" onFinish={handleSave}>
+            <Form.Item 
+              label="配置名称" 
+              name="name" 
+              rules={[{ required: true, message: '请输入配置名称' }]}
+            >
+              <Input placeholder="例如：Google OAuth" />
+            </Form.Item>
 
-          <Form.Item 
-            label="提供商标识" 
-            name="provider" 
-            rules={[{ required: true, message: '请输入提供商标识' }]}
-          >
-            <Input placeholder="例如：GOOGLE, GITHUB, CUSTOM" />
-          </Form.Item>
+            <Form.Item 
+              label="提供商标识" 
+              name="provider" 
+              rules={[{ required: true, message: '请输入提供商标识' }]}
+            >
+              <Input placeholder="例如：GOOGLE, GITHUB, CUSTOM" />
+            </Form.Item>
 
-          <Form.Item 
-            label="Client ID" 
-            name="clientId" 
-            rules={[{ required: true, message: '请输入Client ID' }]}
-          >
-            <Input placeholder="从OAuth2提供商获取" />
-          </Form.Item>
+            <Form.Item 
+              label="Client ID" 
+              name="clientId" 
+              rules={[{ required: true, message: '请输入Client ID' }]}
+            >
+              <Input placeholder="从OAuth2提供商获取" />
+            </Form.Item>
 
-          <Form.Item 
-            label="Client Secret" 
-            name="clientSecret" 
-            rules={[{ required: true, message: '请输入Client Secret' }]}
-          >
-            <PasswordInput placeholder="从OAuth2提供商获取" />
-          </Form.Item>
+            <Form.Item 
+              label="Client Secret" 
+              name="clientSecret" 
+              rules={[{ required: true, message: '请输入Client Secret' }]}
+            >
+              <PasswordInput placeholder="从OAuth2提供商获取" />
+            </Form.Item>
 
-          <Form.Item 
-            label="Callback URL" 
-            name="callbackUrl" 
-            rules={[{ required: true, message: '请输入Callback URL' }]}
-          >
-            <Input placeholder="例如：http://localhost:5000/api/auth/oauth2/google/callback" />
-          </Form.Item>
+            <Form.Item 
+              label="Callback URL" 
+              name="callbackUrl" 
+              rules={[{ required: true, message: '请输入Callback URL' }]}
+            >
+              <Input placeholder="例如：http://localhost:5000/api/auth/oauth2/google/callback" />
+            </Form.Item>
 
-          <Form.Item label="授权URL (可选)" name="authUrl">
-            <Input placeholder="例如：https://accounts.google.com/o/oauth2/v2/auth" />
-          </Form.Item>
+            <Form.Item label="授权URL (可选)" name="authUrl">
+              <Input placeholder="例如：https://accounts.google.com/o/oauth2/v2/auth" />
+            </Form.Item>
 
-          <Form.Item label="Token URL (可选)" name="tokenUrl">
-            <Input placeholder="例如：https://oauth2.googleapis.com/token" />
-          </Form.Item>
+            <Form.Item label="Token URL (可选)" name="tokenUrl">
+              <Input placeholder="例如：https://oauth2.googleapis.com/token" />
+            </Form.Item>
 
-          <Form.Item label="用户信息URL (可选)" name="userInfoUrl">
-            <Input placeholder="例如：https://www.googleapis.com/oauth2/v2/userinfo" />
-          </Form.Item>
+            <Form.Item label="用户信息URL (可选)" name="userInfoUrl">
+              <Input placeholder="例如：https://www.googleapis.com/oauth2/v2/userinfo" />
+            </Form.Item>
 
-          <Form.Item label="Scope (逗号分隔)" name="scope">
-            <TextArea 
-              rows={3}
-              placeholder="例如：profile, email, openid"
-            />
-          </Form.Item>
+            <Form.Item label="Scope (逗号分隔)" name="scope">
+              <TextArea 
+                rows={3}
+                placeholder="例如：profile, email, openid"
+              />
+            </Form.Item>
 
-          <Form.Item label="启用" name="isActive" valuePropName="checked" initialValue={true}>
-            <Switch />
-          </Form.Item>
+            <Form.Item label="启用" name="isActive" valuePropName="checked" initialValue={true}>
+              <Switch />
+            </Form.Item>
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
-                保存
-              </Button>
-              <Button onClick={handleCloseModal}>取消</Button>
-            </Space>
-          </Form.Item>
-        </Form>
+            <Form.Item>
+              <Space>
+                <Button type="primary" htmlType="submit">
+                  保存
+                </Button>
+                <Button onClick={handleCloseModal}>取消</Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        )}
       </Modal>
     </div>
   );

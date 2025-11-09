@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Switch, Space, Typography, message, Alert, Select } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, Switch, Space, Typography, message, Alert, Select, Spin } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import adminService from '../../services/adminService';
 import { SSOConfig, SSOConfigPayload } from '../../types/admin';
@@ -12,6 +12,7 @@ const SSOConfigPage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingConfig, setEditingConfig] = useState<SSOConfig | null>(null);
   const [form] = Form.useForm();
+  const [modalLoading, setModalLoading] = useState(false);
 
   const fetchConfigs = async () => {
     try {
@@ -29,19 +30,30 @@ const SSOConfigPage = () => {
     fetchConfigs();
   }, []);
 
-  const handleOpenModal = (config?: SSOConfig) => {
-    setEditingConfig(config || null);
+  const handleOpenModal = async (config?: SSOConfig) => {
     if (config) {
-      form.setFieldsValue({
-        ...config,
-        allowedIPs: config.allowedIPs?.join(', '),
-        userCodeParamName: config.userCodeParamName || 'UserCode',
-        userCodeEncryption: config.userCodeEncryption || 'DES',
-        pageUrlParamName: config.pageUrlParamName || 'PageUrl',
-        timestampParamName: config.timestampParamName || 'iat',
-        enableThirdPartyMapping: config.enableThirdPartyMapping ?? false,
-      });
+      setModalVisible(true);
+      setModalLoading(true);
+      try {
+        const fullConfig = await adminService.getSSOConfig(config.id);
+        setEditingConfig(fullConfig);
+        form.setFieldsValue({
+          ...fullConfig,
+          allowedIPs: fullConfig.allowedIPs?.join(', '),
+          userCodeParamName: fullConfig.userCodeParamName || 'UserCode',
+          userCodeEncryption: fullConfig.userCodeEncryption || 'DES',
+          pageUrlParamName: fullConfig.pageUrlParamName || 'PageUrl',
+          timestampParamName: fullConfig.timestampParamName || 'iat',
+          enableThirdPartyMapping: fullConfig.enableThirdPartyMapping ?? false,
+        });
+      } catch (error: any) {
+        message.error(error.response?.data?.message || '加载配置失败');
+        setModalVisible(false);
+      } finally {
+        setModalLoading(false);
+      }
     } else {
+      setEditingConfig(null);
       form.resetFields();
       form.setFieldsValue({
         desPadding: 'pkcs5padding',
@@ -54,13 +66,14 @@ const SSOConfigPage = () => {
         timestampParamName: 'iat',
         enableThirdPartyMapping: false,
       });
+      setModalVisible(true);
     }
-    setModalVisible(true);
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
     setEditingConfig(null);
+    setModalLoading(false);
     form.resetFields();
   };
 
@@ -196,7 +209,12 @@ const SSOConfigPage = () => {
           showIcon
           style={{ marginBottom: 16 }}
         />
-        <Form form={form} layout="vertical" onFinish={handleSave}>
+        {modalLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <Spin size="large" tip="加载中..." />
+          </div>
+        ) : (
+          <Form form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item 
             label="配置名称" 
             name="name" 
@@ -356,6 +374,7 @@ const SSOConfigPage = () => {
             </Space>
           </Form.Item>
         </Form>
+        )}
       </Modal>
     </div>
   );

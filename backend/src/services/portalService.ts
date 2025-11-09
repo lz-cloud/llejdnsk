@@ -10,6 +10,11 @@ class PortalService {
             group: {
               include: {
                 permissions: {
+                  where: {
+                    knowledgeBase: {
+                      isActive: true,
+                    },
+                  },
                   include: {
                     knowledgeBase: true,
                   },
@@ -19,6 +24,11 @@ class PortalService {
           },
         },
         userAccess: {
+          where: {
+            knowledgeBase: {
+              isActive: true,
+            },
+          },
           include: {
             knowledgeBase: true,
           },
@@ -33,7 +43,7 @@ class PortalService {
     const knowledgeBases = new Map();
 
     user.userAccess.forEach((access) => {
-      if (access.knowledgeBase && access.knowledgeBase.isActive) {
+      if (access.knowledgeBase) {
         knowledgeBases.set(access.knowledgeBase.id, {
           ...access.knowledgeBase,
           accessLevel: access.accessLevel,
@@ -44,7 +54,7 @@ class PortalService {
 
     user.userGroups.forEach((membership) => {
       membership.group.permissions.forEach((permission) => {
-        if (permission.knowledgeBase && permission.knowledgeBase.isActive && !knowledgeBases.has(permission.knowledgeBase.id)) {
+        if (permission.knowledgeBase && !knowledgeBases.has(permission.knowledgeBase.id)) {
           knowledgeBases.set(permission.knowledgeBase.id, {
             ...permission.knowledgeBase,
             accessLevel: permission.accessLevel,
@@ -57,7 +67,10 @@ class PortalService {
     const publicKnowledgeBases = await prisma.knowledgeBase.findMany({
       where: {
         isActive: true,
-        groupPermissions: { none: {} },
+        AND: [
+          { userAccess: { none: {} } },
+          { groupPermissions: { none: {} } },
+        ],
       },
     });
 
