@@ -62,7 +62,12 @@ export const createOrUpdateSSOConfig = async (req: Request, res: Response) => {
 export const listSSOConfigs = async (_req: Request, res: Response) => {
   try {
     const configs = await adminService.listSSOConfigs();
-    res.json({ success: true, data: configs });
+    const sanitizedConfigs = configs.map(config => ({
+      ...config,
+      desKey: config.desKey ? '***' + config.desKey.slice(-2) : undefined,
+      desIV: config.desIV ? '***' + config.desIV.slice(-2) : undefined,
+    }));
+    res.json({ success: true, data: sanitizedConfigs });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to list SSO configs' });
   }
@@ -232,7 +237,11 @@ export const createOrUpdateOAuth2Config = async (req: Request, res: Response) =>
 export const listOAuth2Configs = async (_req: Request, res: Response) => {
   try {
     const configs = await adminService.listOAuth2Configs();
-    res.json({ success: true, data: configs });
+    const sanitizedConfigs = configs.map(config => ({
+      ...config,
+      clientSecret: config.clientSecret ? '***' + config.clientSecret.slice(-4) : undefined,
+    }));
+    res.json({ success: true, data: sanitizedConfigs });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to list OAuth2 configs' });
   }

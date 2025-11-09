@@ -97,6 +97,10 @@ const adminService = {
     const { data } = await api.get('/admin/oauth2-configs');
     return data.data;
   },
+  async getOAuth2Config(id: string): Promise<OAuth2Config> {
+    const { data } = await api.get(`/admin/oauth2-configs/${id}`);
+    return data.data;
+  },
   async createOrUpdateOAuth2Config(payload: OAuth2ConfigPayload): Promise<OAuth2Config> {
     const { data } = await api.post('/admin/oauth2-configs', payload);
     return data.data;
