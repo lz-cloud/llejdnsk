@@ -46,25 +46,6 @@ const KnowledgeBaseViewer = ({ open, knowledgeBase, onClose }: KnowledgeBaseView
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !document.fullscreenElement) {
-        onClose();
-      } else if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
-        e.preventDefault();
-        handleRefresh();
-      } else if (e.key === 'F11') {
-        e.preventDefault();
-        toggleFullscreen();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose, handleRefresh, toggleFullscreen]);
-
   const handleIframeLoad = () => {
     setLoading(false);
     setHasError(false);
@@ -125,6 +106,25 @@ const KnowledgeBaseViewer = ({ open, knowledgeBase, onClose }: KnowledgeBaseView
       message.error('全屏切换失败');
     }
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !document.fullscreenElement) {
+        onClose();
+      } else if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+        e.preventDefault();
+        handleRefresh();
+      } else if (e.key === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose, handleRefresh, toggleFullscreen]);
 
   return (
     <Modal
